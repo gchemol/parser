@@ -1,0 +1,17 @@
+# cargo
+
+# [[file:~/Workspace/Programming/text-parser/text-parser.note::*cargo][cargo:1]]
+[package]
+name = "textparser"
+version = "0.0.1"
+edition = "2018"
+authors = ["Wenping Guo <ybyygu@gmail.com>"]
+
+[dependencies]
+quicli = "*"
+#combine = "*"
+nom = "4.1"
+
+[dev-dependencies]
+# approx = "0.3"
+# cargo:1 ends here
