@@ -123,8 +123,10 @@ pub fn average_bond_orders(fname: &str) -> Result<()>{
     for (_, v) in map_bosum.iter_mut() {
         *v /= (i as f64)
     }
-    // println!("{:#?}", map_nbonds);
-    // println!("{:#?}", map_bosum);
+
+    println!("average coordinate number:\n{:#?}", map_nbonds);
+
+    println!("average bond order sum:\n{:#?}", map_bosum);
 
     Ok(())
 }
