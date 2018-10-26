@@ -1,13 +1,13 @@
 // base
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*base][base:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*base][base:1]]
 // Indicating the end of stream
 pub const MAGIC_EOF: &str = "\n\nxTHIS_IS_THE=MAGIC_END_OF_FILE\n";
 // base:1 ends here
 
 // separator
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*separator][separator:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*separator][separator:1]]
 named!(pub eof<&str, &str>, tag!(MAGIC_EOF));
 
 /// A whitespace wrapper consuming " \t\r" (no newline)
@@ -77,7 +77,7 @@ fn test_parser_sp() {
 // : return Err(nom_error!(input, 120));
 // : map_err(|e| nom_failure!(input))
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*error][error:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*error][error:1]]
 #[macro_export]
 macro_rules! nom_error {
     ($e:expr) => {
@@ -103,7 +103,7 @@ macro_rules! nom_failure {
 // reexport nom combinators
 
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*reexport][reexport:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*reexport][reexport:1]]
 pub use nom::{
     self,
     // Recognizes floating point number in a string and returs a f64
@@ -128,7 +128,7 @@ pub use nom::{
 
 // separators
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*separators][separators:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*separators][separators:1]]
 // Match a blank line containing zero or more whitespace character
 named!(pub blank_line<&str, &str>, sp!(nom::line_ending));
 
@@ -144,7 +144,7 @@ named!(pub comma_or_space<&str, &str>, alt!(
 
 // numbers
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*numbers][numbers:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*numbers][numbers:1]]
 /// Match one unsigned integer: 123
 named!(pub unsigned_digit<&str, usize>, map_res!(
     digit,
@@ -180,7 +180,7 @@ fn test_parser_signed_digit() {
 
 // coordinates
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*coordinates][coordinates:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*coordinates][coordinates:1]]
 /// Consume three float numbers separated by one or more spaces
 /// Return position array
 named!(pub xyz_array<&str, [f64; 3]>, do_parse!(
@@ -209,7 +209,7 @@ fn test_parser_xyz_array() {
 
 // numbers
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*numbers][numbers:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*numbers][numbers:1]]
 /// Parse a line containing an unsigned integer
 named!(pub read_usize<&str, usize>, sp!(terminated!(unsigned_digit, eol)));
 
@@ -249,14 +249,16 @@ fn test_parser_f64_many() {
 
 // lines
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*lines][lines:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*lines][lines:1]]
 /// Match the remaining line including the eol (end of line) character
+#[inline]
 named!(pub read_until_eol<&str, &str>, terminated!(
     not_line_ending,
     line_ending
 ));
 
 /// Peek current line without consuming it
+#[inline]
 named!(pub peek_line<&str, &str>, peek!(terminated!(
     not_line_ending,
     line_ending

@@ -1,6 +1,6 @@
 # cargo
 
-# [[file:~/Workspace/Programming/text-parser/text-parser.note::*cargo][cargo:1]]
+# [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*cargo][cargo:1]]
 [package]
 name = "textparser"
 version = "0.0.2"
@@ -13,5 +13,5 @@ quicli = "*"
 nom = "4.1"
 
 [dev-dependencies]
-# approx = "0.3"
+structopt = "*"
 # cargo:1 ends here

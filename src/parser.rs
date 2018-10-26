@@ -1,6 +1,6 @@
 // base
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*base][base:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*base][base:1]]
 use crate::nom_parser::*;
 
 use std::io::{Read, BufRead, BufReader};
@@ -11,22 +11,33 @@ use nom;
 
 // parse
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*parse][parse:1]]
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*parse][parse:1]]
 /// A stream parser for large text file
 pub struct TextParser {
     /// The buffer size counted in number of lines
     nlines: usize,
 }
 
-/// General interface for parsing a large text file
-impl Default for TextParser {
-    fn default() -> Self {
+impl TextParser {
+    /// Construct a text parser with buffer size `n`
+    pub fn new(n: usize) -> Self {
         TextParser {
-            nlines: 100_000,
+            nlines: n,
         }
     }
 }
 
+/// General interface for parsing a large text file
+impl Default for TextParser {
+    fn default() -> Self {
+        TextParser {
+            nlines: 5_000,
+        }
+    }
+}
+
+// 100MB?
+const DEFAULT_BUF_SIZE: usize = 100_000 * 1024;
 impl TextParser {
     /// Entry point for parsing a text file
     ///
@@ -39,7 +50,8 @@ impl TextParser {
         C: FnMut(P),
     {
         // a. prepare data
-        let mut reader = BufReader::new(f);
+        // let mut reader = BufReader::new(f);
+        let mut reader = BufReader::with_capacity(DEFAULT_BUF_SIZE, f);
         let mut chunk = String::new();
 
         // b. process the read/parse loop

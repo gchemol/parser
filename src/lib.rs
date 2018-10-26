@@ -3,14 +3,8 @@
 // :header-args: :tangle src/lib.rs
 // :END:
 
-// [[file:~/Workspace/Programming/text-parser/text-parser.note::*lib.rs][lib.rs:1]]
-#![allow(dead_code)]
-
+// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*lib.rs][lib.rs:1]]
 #[macro_use] extern crate nom;
-
-// for tests only
-//#[cfg(test)]
-//#[macro_use] extern crate approx;
 
 #[macro_use]
 mod nom_parser;
