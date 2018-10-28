@@ -7,9 +7,9 @@
 #[macro_use] extern crate nom;
 
 #[macro_use]
-mod nom_parser;
+mod combinators;
 mod parser;
 
-pub use self::nom_parser::*;
+pub use self::combinators::*;
 pub use self::parser::*;
 // lib.rs:1 ends here

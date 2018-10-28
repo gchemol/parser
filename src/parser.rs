@@ -1,7 +1,7 @@
 // base
 
 // [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*base][base:1]]
-use crate::nom_parser::*;
+use crate::combinators::*;
 
 use std::io::{Read, BufRead, BufReader};
 
@@ -12,17 +12,19 @@ use nom;
 // parse
 
 // [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*parse][parse:1]]
+use std::str;
+
 /// A stream parser for large text file
 pub struct TextParser {
-    /// The buffer size counted in number of lines
-    nlines: usize,
+    /// The buffer size
+    buffer_size: usize,
 }
 
 impl TextParser {
     /// Construct a text parser with buffer size `n`
     pub fn new(n: usize) -> Self {
         TextParser {
-            nlines: n,
+            buffer_size: n,
         }
     }
 }
@@ -31,13 +33,11 @@ impl TextParser {
 impl Default for TextParser {
     fn default() -> Self {
         TextParser {
-            nlines: 5_000,
+            buffer_size: 1 * 1024 * 1024 * 1024,
         }
     }
 }
 
-// 100MB?
-const DEFAULT_BUF_SIZE: usize = 100_000 * 1024;
 impl TextParser {
     /// Entry point for parsing a text file
     ///
@@ -51,7 +51,7 @@ impl TextParser {
     {
         // a. prepare data
         // let mut reader = BufReader::new(f);
-        let mut reader = BufReader::with_capacity(DEFAULT_BUF_SIZE, f);
+        let mut reader = BufReader::with_capacity(self.buffer_size, f);
         let mut chunk = String::new();
 
         // b. process the read/parse loop
@@ -59,31 +59,52 @@ impl TextParser {
         let mut eof = false;
         'out: loop {
             // 0. fill chunk
-            if ! eof {
-                debug!("fill data");
-                for _ in 0..self.nlines {
-                    // reach EOF
-                    if reader.read_line(&mut chunk)? == 0 {
-                        eof = true;
-                        // a workaround for nom 4.0 changes: append a magic_eof line to make
-                        // stream `complete`
-                        chunk.push_str(MAGIC_EOF);
-                        break;
-                    }
+            // if ! eof {
+            //     for _ in 0..self.buffer_size {
+            //         // reach EOF
+            //         if reader.read_line(&mut chunk)? == 0 {
+            //             eof = true;
+            //             // a workaround for nom 4.0 changes: append a magic_eof line to make
+            //             // stream `complete`
+            //             chunk.push_str(MAGIC_EOF);
+            //             break;
+            //         }
+            //     }
+            // }
+
+            // we can't have two `&mut` references to `stdin`, so use a block
+            // to end the borrow early.
+            let length = {
+                let buffer = reader.fill_buf()?;
+                let length = buffer.len();
+                if length != 0 {
+                    // fill chunk with new data
+                    chunk.push_str(&str::from_utf8(&buffer)?);
+                } else {
+                    eof = true;
+                    chunk.push_str(MAGIC_EOF);
                 }
-            }
+
+                length
+            };
+            // ensure the bytes we worked with aren't returned again later
+            reader.consume(length);
 
             // 1. parse/consume the chunk until we get Incomplete error
             // remained: the unprocessed lines by parser
             let mut remained = String::new();
+            let mut input = chunk.as_str();
             loop {
-                match parser(&chunk) {
+                match parser(input) {
                     // 1.1 success parsed one part
                     Ok((rest, part)) => {
-                        // save the remained data
-                        remained = String::from(rest);
+                        // avoid infinite loop
+                        debug_assert!(rest.len() < input.len());
+                        // update the stream with the rest
+                        input = rest;
                         // collect the parsed value
                         collector(part);
+                        //println!("parse ok");
                     },
 
                     // 1.2 the chunk is incomplete.
@@ -91,15 +112,18 @@ impl TextParser {
                     // so we wait for the next refill and then retry parsing
                     Err(nom::Err::Incomplete(_)) => {
                         // the chunk is unstained, so just break the parsing loop
+                        //println!("parse incomplete");
                         break;
                     },
 
                     // 1.3 found parse errors, just ignore it and continue
                     Err(nom::Err::Error(err)) => {
-                        eprintln!("found parsing error: {:?}", err);
-                        eprintln!("the context lines: {}", chunk);
+                        if ! eof {
+                            eprintln!("found parsing error: {:?}", err);
+                            eprintln!("the context lines: {}", input);
+                        }
+                        //break 'out;
                         break;
-                        // break 'out;
                     },
 
                     // 1.4 found serious errors
@@ -112,23 +136,19 @@ impl TextParser {
                         bail!("found unrecovered nom state!");
                     }
                 }
-
-                // 2. update the chunk with remained data after a successful parsing
-                // chunk.clear();
-                // chunk.push_str(&remained);
-                chunk = remained;
             }
 
             // all done, get out the loop
             if eof {
-                if chunk.len() != 0 {
-                    if chunk.trim() != MAGIC_EOF.trim() {
-                        eprintln!("remained data:\n {:}", chunk);
+                if input.len() != 0 {
+                    if input.trim() != MAGIC_EOF.trim() {
+                        eprintln!("remained data:\n {:}", input);
                     }
                 }
                 break
+            } else {// update chunk with remained data
+                chunk = String::from(input);
             };
-
         }
         info!("parsing done.");
 

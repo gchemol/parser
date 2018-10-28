@@ -1,15 +1,12 @@
 // base
 
 // [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*base][base:1]]
-// Indicating the end of stream
-pub const MAGIC_EOF: &str = "\n\nxTHIS_IS_THE=MAGIC_END_OF_FILE\n";
+
 // base:1 ends here
 
 // separator
 
 // [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*separator][separator:1]]
-named!(pub eof<&str, &str>, tag!(MAGIC_EOF));
-
 /// A whitespace wrapper consuming " \t\r" (no newline)
 named!(pub space_token<&str, &str>, eat_separator!(&b" \t\r"[..]));
 
@@ -250,6 +247,10 @@ fn test_parser_f64_many() {
 // lines
 
 // [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*lines][lines:1]]
+// Indicating the end of stream
+pub const MAGIC_EOF: &str = "\n\nxTHIS_IS_THE=MAGIC_END_OF_FILE\n";
+named!(pub eof<&str, &str>, tag!(MAGIC_EOF));
+
 /// Match the remaining line including the eol (end of line) character
 #[inline]
 named!(pub read_until_eol<&str, &str>, terminated!(

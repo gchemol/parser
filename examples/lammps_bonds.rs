@@ -53,6 +53,7 @@ fn test_read_bond_order_sum() {
 use std::collections::HashMap;
 
 named!(read_meta_from_comments<&str, (usize, usize)>, sp!(do_parse!(
+    //call!(read_lines_until, "# Timestep") >>
     tag!("# Timestep")            >> nstep: read_usize >>
     read_line >>            // #
     tag!("# Number of particles") >> npts : read_usize >>
@@ -107,6 +108,7 @@ pub fn average_bond_orders(fname: &str) -> Result<()>{
                  // collect all parts
                  |m| {
                      i += 1;
+                     //println!("{:#?}", i);
                      for (index, nbonds, bosum) in m {
                          let v = map_nbonds.entry(index).or_insert(0.);
                          *v += nbonds as f64;
@@ -124,9 +126,9 @@ pub fn average_bond_orders(fname: &str) -> Result<()>{
         *v /= (i as f64)
     }
 
-    println!("average coordinate number:\n{:#?}", map_nbonds);
+    // println!("average coordinate number:\n{:#?}", map_nbonds);
 
-    println!("average bond order sum:\n{:#?}", map_bosum);
+    // println!("average bond order sum:\n{:#?}", map_bosum);
 
     Ok(())
 }
