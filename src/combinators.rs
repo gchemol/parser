@@ -249,7 +249,7 @@ fn test_parser_f64_many() {
 // [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*lines][lines:1]]
 // Indicating the end of stream
 pub const MAGIC_EOF: &str = "\n\nxTHIS_IS_THE=MAGIC_END_OF_FILE\n";
-named!(pub eof<&str, &str>, tag!(MAGIC_EOF));
+named!(pub eof<&str, &str>, tag!(MAGIC_EOF.trim_start()));
 
 /// Match the remaining line including the eol (end of line) character
 #[inline]

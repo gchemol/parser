@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate nom;
 
+use std::fs::File;
 use textparser::*;
 // base:1 ends here
 
@@ -94,8 +95,6 @@ fn read_part(input: &str) -> nom::IResult<&str, Vec<(usize, usize, f64)>> {
 /// Calculate average number of bonded particles and bond order sum for each
 /// particle in trajectory
 pub fn average_bond_orders(fname: &str) -> Result<()>{
-    use std::fs::File;
-
     let parser = TextParser::default();
     let fp = File::open(fname).expect("test bonds file");
 
