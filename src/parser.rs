@@ -5,8 +5,10 @@ use crate::combinators::*;
 
 use std::io::{Read, BufRead, BufReader};
 
-use quicli::prelude::*;
 use nom;
+use quicli::prelude::*;
+
+type Result<T> = ::std::result::Result<T, Error>;
 // base:1 ends here
 
 // parse
@@ -23,9 +25,7 @@ pub struct TextParser {
 impl TextParser {
     /// Construct a text parser with buffer size `n`
     pub fn new(n: usize) -> Self {
-        TextParser {
-            buffer_size: n,
-        }
+        TextParser { buffer_size: n }
     }
 }
 
@@ -92,7 +92,7 @@ impl TextParser {
 
             // 1. parse/consume the chunk until we get Incomplete error
             // remained: the unprocessed lines by parser
-            let mut remained = String::new();
+            let remained = String::new();
             let mut input = chunk.as_str();
             loop {
                 match parser(input) {
@@ -105,7 +105,7 @@ impl TextParser {
                         // collect the parsed value
                         collector(part);
                         //println!("parse ok");
-                    },
+                    }
 
                     // 1.2 the chunk is incomplete.
                     // `Incomplete` means the nom parser does not have enough data to decide,
@@ -114,22 +114,22 @@ impl TextParser {
                         // the chunk is unstained, so just break the parsing loop
                         //println!("parse incomplete");
                         break;
-                    },
+                    }
 
                     // 1.3 found parse errors, just ignore it and continue
                     Err(nom::Err::Error(err)) => {
-                        if ! eof {
+                        if !eof {
                             eprintln!("found parsing error: {:?}", err);
                             eprintln!("the context lines: {}", input);
                         }
                         //break 'out;
                         break;
-                    },
+                    }
 
                     // 1.4 found serious errors
                     Err(nom::Err::Failure(err)) => {
                         bail!("encount hard failure: {:?}", err);
-                    },
+                    }
 
                     // 1.5 alerting nom changes
                     _ => {
@@ -145,8 +145,9 @@ impl TextParser {
                         eprintln!("remained data:\n {:}", input);
                     }
                 }
-                break
-            } else {// update chunk with remained data
+                break;
+            } else {
+                // update chunk with remained data
                 chunk = String::from(input);
             };
         }

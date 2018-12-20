@@ -12,20 +12,24 @@ use textparser::*;
 #[inline]
 fn read_bond_order_sum(input: &str) -> nom::IResult<&str, (usize, usize, f64)> {
     // read current atom index and its number of bonds
-    let (input, (index, nbonds)) = sp!(input, do_parse!(
-        index : unsigned_digit >>
-                digit          >>
-        nbonds: unsigned_digit >>
-        ((index, nbonds))
-    ))?;
+    let (input, (index, nbonds)) = sp!(
+        input,
+        do_parse!(
+            index:  unsigned_digit >> digit >>
+            nbonds: unsigned_digit >>
+            ((index, nbonds)))
+    )?;
 
     // read related bond orders
     let nskip = 2 * nbonds + 1;
-    let (input, bosum) = sp!(input, do_parse!(
-               count!(sp!(not_space), nskip) >> // ignore preceding items
-        bosum: double                        >> read_line >>
-        (bosum)
-    ))?;
+    let (input, bosum) = sp!(
+        input,
+        do_parse!(
+            count!(sp!(not_space), nskip) >> // ignore preceding items
+            bosum: double                 >> read_line >>
+            (bosum)
+        )
+    )?;
 
     Ok((input, (index, nbonds, bosum)))
 }
@@ -136,26 +140,29 @@ pub fn average_bond_orders(fname: &str) -> Result<()>{
 // main
 
 // [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*main][main:1]]
-#[macro_use] extern crate quicli;
+#[macro_use]
+extern crate quicli;
 use quicli::prelude::*;
-use ::structopt::StructOpt;
 use std::time;
+use structopt::StructOpt;
+
+type Result<T> = ::std::result::Result<T, Error>;
 
 #[derive(Debug, StructOpt)]
 struct Cli {
     /// The file to read
     file: String,
-    // Quick and easy logging setup you get for free with quicli
-    #[structopt(flatten)]
-    verbosity: Verbosity,
 }
 
-main!(|args: Cli, log_level: verbosity| {
+fn main() -> CliResult {
+    let args = Cli::from_args();
     println!("parsing {:}", &args.file);
 
     let now = time::SystemTime::now();
     average_bond_orders(&args.file)?;
-    let delta= now.elapsed()?.as_secs();
+    let delta = now.elapsed()?.as_secs();
     println!("elapsed time = {:} s", delta);
-});
+
+    Ok(())
+}
 // main:1 ends here

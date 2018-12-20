@@ -102,7 +102,6 @@ macro_rules! nom_failure {
 
 // [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*reexport][reexport:1]]
 pub use nom::{
-    self,
     // Recognizes floating point number in a string and returs a f64
     double,
     // Recognizes one or more numerical characters: 0-9
@@ -277,7 +276,7 @@ pub fn read_line(input: &str) -> nom::IResult<&str, &str> {
     // remove remaining carriage return: `\r` for windows line ending
     let n = line.len();
     if line.ends_with("\r") {
-        Ok((rest, &line[0..n-1]))
+        Ok((rest, &line[0..n - 1]))
     } else {
         Ok((rest, line))
     }
@@ -288,13 +287,11 @@ fn test_parser_read_until_eol() {
     let _ = read_until_eol("this is the end\nok\n").expect("parser: read_until_eol");
     let _ = read_until_eol("\n").expect("parser: read_until_eol empty line");
 
-    let (rest, line) = read_line("this is the end\r\nok\r\n")
-        .expect("parser: read_until_eol");
+    let (rest, line) = read_line("this is the end\r\nok\r\n").expect("parser: read_until_eol");
     assert_eq!("this is the end", line);
     assert_eq!("ok\r\n", rest);
 
-    let (rest, line) = read_line("\n\n")
-        .expect("parser: read_line empty line");
+    let (rest, line) = read_line("\n\n").expect("parser: read_line empty line");
     assert_eq!("", line);
     assert_eq!("\n", rest);
 }
@@ -321,28 +318,18 @@ C -11.4286 -1.3155  0.0000
 /// Read lines until the line starting with the `label`, and return the consumed lines
 #[inline]
 pub fn read_lines_until<'a>(input: &'a str, label: &'a str) -> nom::IResult<&'a str, Vec<&'a str>> {
-    let (input, pp) = dos2unix!(
-        input,
-        many_till!(
-            read_line,
-            peek!(
-                alt!(tag!(label) | eof)
-            )
-        )
-    )?;
+    let (input, pp) = dos2unix!(input, many_till!(read_line, peek!(alt!(tag!(label) | eof))))?;
 
     Ok((input, pp.0))
 }
 
 /// Read lines until the line starting with the `label` and consumes it
 #[inline]
-pub fn read_lines_until_and_consume<'a>(input: &'a str, label: &'a str) -> nom::IResult<&'a str, Vec<&'a str>> {
-    let (input, pp) = dos2unix!(input,
-        many_till!(
-            read_line,
-            alt!(tag!(label) | eof)
-        )
-    )?;
+pub fn read_lines_until_and_consume<'a>(
+    input: &'a str,
+    label: &'a str,
+) -> nom::IResult<&'a str, Vec<&'a str>> {
+    let (input, pp) = dos2unix!(input, many_till!(read_line, alt!(tag!(label) | eof)))?;
 
     Ok((input, pp.0))
 }
@@ -353,33 +340,20 @@ pub fn read_many_until<'a, F>(input: &'a str, parser: F) -> nom::IResult<&'a str
 where
     F: Fn(&'a str) -> nom::IResult<&'a str, &'a str>,
 {
-    let (input, pp) = many_till!(
-        input,
-        read_line,
-        peek!(
-            alt!(
-                parser |
-                eof
-            )
-        )
-    )?;
+    let (input, pp) = many_till!(input, read_line, peek!(alt!(parser | eof)))?;
 
     Ok((input, pp.0))
 }
 
 #[inline]
-pub fn read_many_until_and_consume<'a, F>(input: &'a str, parser: F) -> nom::IResult<&'a str, Vec<&'a str>>
+pub fn read_many_until_and_consume<'a, F>(
+    input: &'a str,
+    parser: F,
+) -> nom::IResult<&'a str, Vec<&'a str>>
 where
     F: Fn(&'a str) -> nom::IResult<&'a str, &'a str>,
 {
-    let (input, pp) = many_till!(
-        input,
-        read_line,
-        alt!(
-            parser |
-            eof
-        )
-    )?;
+    let (input, pp) = many_till!(input, read_line, alt!(parser | eof))?;
 
     Ok((input, pp.0))
 }

@@ -3,13 +3,12 @@
 # [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*cargo][cargo:1]]
 [package]
 name = "textparser"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
-quicli = "*"
-#combine = "*"
+quicli = "0.4"
 nom = "4.1"
 
 [dev-dependencies]
