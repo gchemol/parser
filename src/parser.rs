@@ -142,7 +142,7 @@ impl TextParser {
             if eof {
                 if input.len() != 0 {
                     if input.trim() != MAGIC_EOF.trim() {
-                        eprintln!("remained data:\n {:}", input);
+                        info!("remained data:\n {:}", input);
                     }
                 }
                 break;

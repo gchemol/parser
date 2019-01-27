@@ -1,9 +1,9 @@
 # cargo
 
-# [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*cargo][cargo:1]]
+# [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*cargo][cargo:1]]
 [package]
 name = "textparser"
-version = "0.0.5"
+version = "0.0.2"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
