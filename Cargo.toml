@@ -2,8 +2,8 @@
 
 # [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*cargo][cargo:1]]
 [package]
-name = "textparser"
-version = "0.0.2"
+name = "text-parser"
+version = "0.0.3"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
