@@ -1,160 +1,196 @@
+// imports
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
+use std::io::{BufRead, BufReader, Read};
+
+use crate::common::*;
+use crate::*;
+// imports:1 ends here
+
 // base
 
-// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*base][base:1]]
-use crate::combinators::*;
-
-use std::io::{Read, BufRead, BufReader};
-
-use nom;
-use quicli::prelude::*;
-
-type Result<T> = ::std::result::Result<T, Error>;
-// base:1 ends here
-
-// parse
-
-// [[file:~/Workspace/Programming/rust-libs/text-parser/text-parser.note::*parse][parse:1]]
-use std::str;
-
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*base][base:1]]
 /// A stream parser for large text file
 pub struct TextParser {
-    /// The buffer size
+    /// The buffer size in number of lines
     buffer_size: usize,
 }
 
 impl TextParser {
     /// Construct a text parser with buffer size `n`
     pub fn new(n: usize) -> Self {
-        TextParser { buffer_size: n }
+        TextParser {
+            buffer_size: n,
+            ..Default::default()
+        }
     }
 }
 
 /// General interface for parsing a large text file
 impl Default for TextParser {
     fn default() -> Self {
-        TextParser {
-            buffer_size: 1 * 1024 * 1024 * 1024,
-        }
+        TextParser { buffer_size: 1000 }
     }
 }
+// base:1 ends here
 
+// core
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*core][core:1]]
 impl TextParser {
     /// Entry point for parsing a text file
     ///
     /// # Parameters
     /// - parser: nom parser
-    /// - collector: a closure to collect parsed results
-    pub fn parse<R: Read, F, C, P: Sized>(&self, f: R, parser: F, mut collector: C) -> Result<()>
+    pub fn parse<R: Read, F, P>(&self, r: R, parser: F) -> impl Iterator<Item = P>
     where
         F: Fn(&str) -> nom::IResult<&str, P>,
-        C: FnMut(P),
     {
-        // a. prepare data
-        // let mut reader = BufReader::new(f);
-        let mut reader = BufReader::with_capacity(self.buffer_size, f);
-        let mut chunk = String::new();
+        // let mut chunks = read_chunk(r, self.buffer_size);
+        let mut reader = BufReader::with_capacity(1024 * 1024 * 100, r);
 
-        // b. process the read/parse loop
-        // indicate if we finish reading
+        let mut i = 0;
         let mut eof = false;
-        'out: loop {
-            // 0. fill chunk
-            // if ! eof {
-            //     for _ in 0..self.buffer_size {
-            //         // reach EOF
-            //         if reader.read_line(&mut chunk)? == 0 {
-            //             eof = true;
-            //             // a workaround for nom 4.0 changes: append a magic_eof line to make
-            //             // stream `complete`
-            //             chunk.push_str(MAGIC_EOF);
-            //             break;
-            //         }
-            //     }
-            // }
-
-            // we can't have two `&mut` references to `stdin`, so use a block
-            // to end the borrow early.
-            let length = {
-                let buffer = reader.fill_buf()?;
-                let length = buffer.len();
-                if length != 0 {
-                    // fill chunk with new data
-                    chunk.push_str(&str::from_utf8(&buffer)?);
-                } else {
-                    eof = true;
-                    chunk.push_str(MAGIC_EOF);
+        let mut remained = String::new();
+        let nlines = self.buffer_size;
+        std::iter::from_fn(move || {
+            loop {
+                // i += 1;
+                // dbg!(i);
+                // 1. parse/consume the chunk until we get Incomplete error
+                for _ in 0..nlines {
+                    match reader.read_line(&mut remained) {
+                        Ok(n) if n == 0 => {
+                            eof = true;
+                            break;
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to read line: {:?}", e);
+                            return None;
+                        }
+                        Ok(_) => {}
+                    }
+                }
+                if eof {
+                    remained.push_str(MAGIC_EOF);
                 }
 
-                length
-            };
-            // ensure the bytes we worked with aren't returned again later
-            reader.consume(length);
-
-            // 1. parse/consume the chunk until we get Incomplete error
-            // remained: the unprocessed lines by parser
-            let remained = String::new();
-            let mut input = chunk.as_str();
-            loop {
-                match parser(input) {
+                let chunk = &remained;
+                match parser(chunk) {
                     // 1.1 success parsed one part
                     Ok((rest, part)) => {
+                        // dbg!(rest);
                         // avoid infinite loop
-                        debug_assert!(rest.len() < input.len());
-                        // update the stream with the rest
-                        input = rest;
+                        debug_assert!(rest.len() < chunk.len());
+
+                        // update the chunk stream with the rest
+                        remained = rest.to_owned();
+
                         // collect the parsed value
-                        collector(part);
-                        //println!("parse ok");
+                        return Some(part);
                     }
 
                     // 1.2 the chunk is incomplete.
-                    // `Incomplete` means the nom parser does not have enough data to decide,
-                    // so we wait for the next refill and then retry parsing
+                    //
+                    // `Incomplete` means the nom parser does not have enough
+                    // data to decide, so we wait for the next refill and then
+                    // retry parsing
                     Err(nom::Err::Incomplete(_)) => {
-                        // the chunk is unstained, so just break the parsing loop
-                        //println!("parse incomplete");
-                        break;
+                        remained = chunk.to_owned();
+                        if eof {
+                            eprintln!("always incompelete???");
+                            return None;
+                        }
                     }
 
                     // 1.3 found parse errors, just ignore it and continue
                     Err(nom::Err::Error(err)) => {
                         if !eof {
                             eprintln!("found parsing error: {:?}", err);
-                            eprintln!("the context lines: {}", input);
+                            eprintln!("the context lines: {}", chunk);
                         }
-                        //break 'out;
-                        break;
+                        return None;
                     }
 
                     // 1.4 found serious errors
                     Err(nom::Err::Failure(err)) => {
-                        bail!("encount hard failure: {:?}", err);
+                        eprintln!("found parser failure: {:?}", err);
+                        return None;
                     }
-
-                    // 1.5 alerting nom changes
-                    _ => {
-                        bail!("found unrecovered nom state!");
-                    }
+                }
+                if eof {
+                    eprintln!("done");
+                    return None;
                 }
             }
-
-            // all done, get out the loop
-            if eof {
-                if input.len() != 0 {
-                    if input.trim() != MAGIC_EOF.trim() {
-                        info!("remained data:\n {:}", input);
-                    }
-                }
-                break;
-            } else {
-                // update chunk with remained data
-                chunk = String::from(input);
-            };
-        }
-        info!("parsing done.");
-
-        // c. finish the job
-        Ok(())
+        })
     }
 }
-// parse:1 ends here
+
+/// Return an iterator over every n lines from `r`
+fn read_chunk<R: Read>(r: R, nlines: usize) -> impl Iterator<Item = String> {
+    let mut reader = BufReader::new(r);
+
+    std::iter::from_fn(move || {
+        let mut chunk = String::new();
+        for _ in 0..nlines {
+            match reader.read_line(&mut chunk) {
+                Ok(n) if n == 0 => {
+                    break;
+                }
+                Err(e) => {
+                    eprintln!("Failed to read line: {:?}", e);
+                    return None;
+                }
+                Ok(_) => {}
+            }
+        }
+
+        if chunk.is_empty() {
+            None
+        } else {
+            Some(chunk)
+        }
+    })
+}
+// core:1 ends here
+
+// tests
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*tests][tests:1]]
+use nom::bytes::streaming::tag;
+
+fn abc(s: &str) -> IResult<&str, [f64; 3]> {
+    let (r, (xyz, _)) = nom::sequence::pair(xyz_array, read_until_eol)(s)?;
+
+    Ok((r, xyz))
+}
+
+fn abc2(s: &str) -> IResult<&str, bool> {
+    let (r, _) = take_until("eof")(s)?;
+
+    Ok((r, false))
+}
+
+// FIXME: not work
+fn abcd(s: &str) -> IResult<&str, &str> {
+    tag("abc")(s)
+}
+
+#[test]
+#[ignore]
+fn test_text_parser() -> Result<()> {
+    use crate::*;
+
+    let fname = "/tmp/a.txt";
+
+    let parser = TextParser::default();
+    let fp = std::fs::File::open(fname)?;
+
+    for x in parser.parse(fp, abc2) {
+        dbg!(x);
+    }
+
+    Ok(())
+}
+// tests:1 ends here

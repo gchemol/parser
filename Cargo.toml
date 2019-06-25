@@ -1,16 +1,16 @@
 # cargo
 
-# [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*cargo][cargo:1]]
+# [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*cargo][cargo:1]]
 [package]
 name = "text-parser"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
 quicli = "0.4"
-nom = "4.1"
+nom = "5"
 
 [dev-dependencies]
-structopt = "*"
+structopt = "0.2"
 # cargo:1 ends here
