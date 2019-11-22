@@ -2,6 +2,7 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
 use std::io::{BufRead, BufReader, Read};
+use std::path::Path;
 
 use crate::common::*;
 use crate::*;
@@ -42,11 +43,27 @@ impl TextParser {
     ///
     /// # Parameters
     /// - parser: nom parser
+    ///
+    /// # Panics
+    /// - panics if `file` doesnot exist.
+    ///
+    pub fn parse_file<R: AsRef<Path>, F, P>(&self, file: R, parser: F) -> impl Iterator<Item = P>
+    where
+        F: Fn(&str) -> nom::IResult<&str, P>,
+    {
+        let fp = std::fs::File::open(file.as_ref()).expect("a file to parse");
+        self.parse(fp, parser)
+    }
+
+    /// Entry point for parsing from text stream
+    ///
+    /// # Parameters
+    /// - parser: nom parser
+    ///
     pub fn parse<R: Read, F, P>(&self, r: R, parser: F) -> impl Iterator<Item = P>
     where
         F: Fn(&str) -> nom::IResult<&str, P>,
     {
-        // let mut chunks = read_chunk(r, self.buffer_size);
         let mut reader = BufReader::with_capacity(1024 * 1024 * 100, r);
 
         let mut i = 0;
@@ -154,43 +171,3 @@ fn read_chunk<R: Read>(r: R, nlines: usize) -> impl Iterator<Item = String> {
     })
 }
 // core:1 ends here
-
-// tests
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*tests][tests:1]]
-use nom::bytes::streaming::tag;
-
-fn abc(s: &str) -> IResult<&str, [f64; 3]> {
-    let (r, (xyz, _)) = nom::sequence::pair(xyz_array, read_until_eol)(s)?;
-
-    Ok((r, xyz))
-}
-
-fn abc2(s: &str) -> IResult<&str, bool> {
-    let (r, _) = take_until("eof")(s)?;
-
-    Ok((r, false))
-}
-
-// FIXME: not work
-fn abcd(s: &str) -> IResult<&str, &str> {
-    tag("abc")(s)
-}
-
-#[test]
-#[ignore]
-fn test_text_parser() -> Result<()> {
-    use crate::*;
-
-    let fname = "/tmp/a.txt";
-
-    let parser = TextParser::default();
-    let fp = std::fs::File::open(fname)?;
-
-    for x in parser.parse(fp, abc2) {
-        dbg!(x);
-    }
-
-    Ok(())
-}
-// tests:1 ends here

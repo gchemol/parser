@@ -1,6 +1,6 @@
 // mods
 
-// [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*mods][mods:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*mods][mods:1]]
 mod parser;
 
 pub use crate::parser::*;
@@ -8,7 +8,7 @@ pub use crate::parser::*;
 
 // common
 
-// [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*common][common:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*common][common:1]]
 pub(crate) mod common {
     pub use quicli::prelude::*;
     pub type Result<T> = ::std::result::Result<T, Error>;
@@ -17,7 +17,7 @@ pub(crate) mod common {
 
 // nom
 
-// [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*nom][nom:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*nom][nom:1]]
 pub use nom::branch::alt;
 pub use nom::bytes::streaming::{is_not, tag, tag_no_case, take_until};
 pub use nom::character::streaming::{
@@ -25,20 +25,30 @@ pub use nom::character::streaming::{
 };
 pub use nom::combinator::{map_res, opt, recognize};
 pub use nom::number::streaming::double;
+pub use nom::IResult;
 
-pub use nom::multi::{count, many0, many1};
+pub use nom::multi::{count, many0, many1, many_m_n};
 
 pub use nom::sequence::{pair, preceded, terminated, tuple};
+// nom:1 ends here
 
 // macros
-use nom::IResult;
-use nom::{do_parse, named};
-// nom:1 ends here
+// 应减少macro的使用.
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*macros][macros:1]]
+// macros
+pub use nom::delimited;
+pub use nom::peek;
+pub use nom::{alt, opt, take, terminated};
+pub use nom::{do_parse, named};
+pub use nom::{many0, many1, many_m_n};
+pub use nom::{tag, tag_no_case};
+// macros:1 ends here
 
 // eof
 // 没有必要了?
 
-// [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*eof][eof:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*eof][eof:1]]
 use crate::common::*;
 
 // Indicating the end of streaming
@@ -57,7 +67,7 @@ fn test_eof() {
 
 // lines
 
-// [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*lines][lines:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*lines][lines:1]]
 /// Anything except whitespace, this parser will not consume "\n" character
 pub fn not_space(s: &str) -> IResult<&str, &str> {
     is_not(" \t\r\n")(s)
@@ -73,9 +83,15 @@ pub fn unsigned_digit(s: &str) -> IResult<&str, usize> {
     map_res(digit1, |s: &str| s.parse::<usize>())(s)
 }
 
-/// Read the remaining line
+/// Read the remaining line excluding eol
 pub fn read_until_eol(s: &str) -> IResult<&str, &str> {
     nom::sequence::terminated(not_line_ending, line_ending)(s)
+}
+
+/// Read the remaining line including eol
+pub fn read_line(s: &str) -> IResult<&str, &str> {
+    use nom::combinator::recognize;
+    recognize(read_until_eol)(s)
 }
 
 /// Match a blank line containing zero or more whitespace character
@@ -103,21 +119,16 @@ fn test_read_until_eol() {
 
     let (r, _) = read_until_eol("\n").expect("parser: read_until_eol empty line");
     assert_eq!(r, "");
-}
 
-#[test]
-#[ignore]
-fn test_no_space() {
-    let x = "1002 xx b";
-
-    let v = unsigned_digit(x);
-    dbg!(v);
+    let (r, v) = read_line("first line\nsecond line\n").expect("read_line");
+    assert_eq!(r, "second line\n");
+    assert_eq!(v, "first line\n");
 }
 // lines:1 ends here
 
 // numbers
 
-// [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*numbers][numbers:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*numbers][numbers:1]]
 /// Parse a line containing an unsigned integer
 pub fn read_usize(s: &str) -> IResult<&str, usize> {
     // allow white spaces
@@ -171,7 +182,7 @@ fn test_read_numbers() {
 
 // coordinates
 
-// [[file:~/Workspace/Programming/gchemol-rs/text-parser/text-parser.note::*coordinates][coordinates:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*coordinates][coordinates:1]]
 /// Consume three float numbers separated by one or more spaces
 /// Return xyz array
 pub fn xyz_array(s: &str) -> IResult<&str, [f64; 3]> {
@@ -183,9 +194,9 @@ pub fn xyz_array(s: &str) -> IResult<&str, [f64; 3]> {
 /// Read xyz coordinates specified in a line
 named!(pub read_xyz<&str, [f64; 3]>, do_parse!(
        space0 >>
-    x: double >> space1      >>
-    y: double >> space1      >>
-    z: double >> eol         >>
+    x: double >> space1 >>
+    y: double >> space1 >>
+    z: double >> eol    >>
     (
         [x, y, z]
     )
