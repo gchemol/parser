@@ -10,8 +10,7 @@ pub use crate::parser::*;
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*common][common:1]]
 pub(crate) mod common {
-    pub use quicli::prelude::*;
-    pub type Result<T> = ::std::result::Result<T, Error>;
+    pub use guts::prelude::*;
 }
 // common:1 ends here
 

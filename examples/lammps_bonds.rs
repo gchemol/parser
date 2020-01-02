@@ -128,13 +128,11 @@ pub fn average_bond_orders(fname: &str) -> Result<()> {
 // main
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*main][main:1]]
-#[macro_use]
-extern crate quicli;
-use quicli::prelude::*;
+use guts::cli::*;
+use guts::prelude::*;
+
 use std::time;
 use structopt::StructOpt;
-
-type Result<T> = ::std::result::Result<T, Error>;
 
 #[derive(Debug, StructOpt)]
 struct Cli {
