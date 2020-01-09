@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use guts::prelude::*;
+use text_parser::old::*;
 use text_parser::*;
 // imports:1 ends here
 

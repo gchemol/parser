@@ -5,6 +5,7 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*xyz.rs][xyz.rs:1]]
 use guts::prelude::*;
+use text_parser::old::*;
 use text_parser::*;
 
 /// A minimal representation for chemical atom.

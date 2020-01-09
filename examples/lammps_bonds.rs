@@ -3,6 +3,7 @@
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
 use std::fs::File;
 use text_parser::*;
+use text_parser::old::*;
 
 use nom::*;
 // imports:1 ends here
