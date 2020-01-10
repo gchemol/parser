@@ -159,20 +159,20 @@ where
 #[test]
 fn test_parser() {
     let f = "./tests/files/lammps-test.dump";
-    let parser = TextReader::from_path(f).unwrap();
-    let records = parser.split_if(|line| line.starts_with("ITEM: TIMESTEP"));
+    let reader = TextReader::from_path(f).unwrap();
+    let records = reader.split_if(|line| line.starts_with("ITEM: TIMESTEP"));
     assert_eq!(records.count(), 3);
 
     let f = "./tests/files/multi.xyz";
-    let parser = TextReader::from_path(f).unwrap();
-    let records = parser.split_if(|line| line.trim().parse::<usize>().is_ok());
+    let reader = TextReader::from_path(f).unwrap();
+    let records = reader.split_if(|line| line.trim().parse::<usize>().is_ok());
     assert_eq!(records.count(), 6);
     // for (i, p) in records.take(3).enumerate() {
     //     println!("{} => {}", i, p);
     // }
 
-    let parser = TextReader::from_path(f).unwrap();
-    for chunk in parser.chunks(5) {
+    let reader = TextReader::from_path(f).unwrap();
+    for chunk in reader.chunks(5) {
         // dbg!(chunk.lines().count());
     }
 }

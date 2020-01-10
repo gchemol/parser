@@ -12,6 +12,7 @@ use crate::*;
 // base
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*base][base:1]]
+#[deprecated(note = "To be removed for performance issue")]
 /// A stream parser for large text file
 pub struct TextParser {
     /// The buffer size in number of lines
