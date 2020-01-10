@@ -16,6 +16,11 @@ pub use nom::do_parse;
 
 // branch
 pub use nom::branch::alt;
+
+// multi
+pub use nom::multi::count;
+
+pub use nom::sequence::terminated;
 // base:1 ends here
 
 // complete or streaming

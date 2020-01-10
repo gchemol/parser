@@ -1,6 +1,7 @@
 // mods
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*mods][mods:1]]
+mod adhoc;
 mod core;
 pub mod new;
 pub mod old;
@@ -21,5 +22,5 @@ pub use crate::core::*;
 pub use crate::parser::*;
 
 // #[cfg(feature = "adhoc")]
-// pub use new as parser_;
+// pub use crate::adhoc as parser;
 // re-exports:1 ends here
