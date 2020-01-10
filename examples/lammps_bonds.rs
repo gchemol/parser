@@ -4,7 +4,7 @@
 use std::fs::File;
 use text_parser::*;
 
-use nom::*;
+use text_parser::parsers::*;
 // imports:1 ends here
 
 //    2 1 3 1 3 14 0         1.324         1.345         1.300         3.969         0.000         0.193
@@ -29,7 +29,7 @@ fn read_bond_order_sum(input: &str) -> IResult<&str, (usize, usize, f64)> {
         input,
         space1 >> pskip >> // ignore preceding items
         bosum: double   >>
-        read_until_eol  >>
+        read_line       >>
         (bosum)
     )?;
 
@@ -46,7 +46,7 @@ fn test_read_bond_order_sum() {
     assert_eq!(bosum, 3.969);
 }
 
-// part
+// parts
 // # Timestep 0
 // #
 // # Number of particles 1822
@@ -56,19 +56,24 @@ fn test_read_bond_order_sum() {
 // # id type nb id_1...id_nb mol bo_1...bo_nb abo nlp q
 //  5 1 14 212 248 824 1000 392 648 1320 417 481 597 1381 245 1493 904 0
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*part][part:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*parts][parts:1]]
 use std::collections::HashMap;
 
-named!(read_meta_from_comments<&str, (usize, usize)>, do_parse!(
-    tag!("# Timestep")            >> nstep: read_usize >> // # Timestep 0
-    read_until_eol                >>                      // #
-    tag!("# Number of particles") >> npts: read_usize  >> // # Number of particles 1822
-    read_until_eol                >> // #
-    read_until_eol                >> // # Max number of bonds per atom 16 with coarse bond order cutoff 0.300
-    read_until_eol                >> // # Particle connection table and bond orders
-    read_until_eol                >> // # id type nb id_1...id_nb mol bo_1...bo_nb abo nlp q
-    ((nstep, npts))
-));
+fn read_meta_from_comments(s: &str) -> IResult<&str, (usize, usize)> {
+    let tag_timestep = tag("# Timestep");
+    let tag_nparticles = tag("# Number of particles");
+    do_parse!(
+        s,
+        tag_timestep            >> nstep: read_usize >> // # Timestep 0
+        read_line               >>                      // #
+        tag_nparticles          >> npts: read_usize  >> // # Number of particles 1822
+        read_line               >> // #
+        read_line               >> // # Max number of bonds per atom 16 with coarse bond order cutoff 0.300
+        read_line               >> // # Particle connection table and bond orders
+        read_line               >> // # id type nb id_1...id_nb mol bo_1...bo_nb abo nlp q
+        ((nstep, npts))
+    )
+}
 
 #[test]
 fn test_read_meta() {
@@ -89,22 +94,29 @@ fn test_read_meta() {
 
 fn read_part(s: &str) -> IResult<&str, Vec<(usize, usize, f64)>> {
     let (rest, (nstep, npts)) = read_meta_from_comments(s)?;
-    std::dbg!(nstep);
     terminated(count(read_bond_order_sum, npts), tag("# \n"))(rest)
 }
+// parts:1 ends here
 
-/// Calculate average number of bonded particles and bond order sum for each
-/// particle in trajectory
-pub fn average_bond_orders(fname: &str) -> Result<()> {
-    let parser = TextParser::new(1050);
-    let fp = File::open(fname).expect("test bonds file");
+// core
 
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*core][core:1]]
+use guts::fs::*;
+fn average_bond_orders(fname: &str) -> Result<()> {
+    // read the first 8 lines, determine the number of atoms in each frame
+    let r = TextReader::from_path(fname)?;
+    let chunk = r.chunks(8).next().unwrap();
+    let (_, (_, n)) = read_meta_from_comments(&chunk).unwrap();
+    dbg!(n);
+
+    // parse data for each frame
     let mut map_nbonds = HashMap::new();
     let mut map_bosum = HashMap::new();
-
     let mut i = 0;
-    for m in parser.parse(fp, read_part) {
+    let r = TextReader::from_path(fname)?;
+    for chunk in r.chunks(n + 7 + 1) {
         i += 1;
+        let (_, m) = read_part(&chunk).unwrap();
         for (index, nbonds, bosum) in m {
             let v = map_nbonds.entry(index).or_insert(0.);
             *v += nbonds as f64;
@@ -123,18 +135,16 @@ pub fn average_bond_orders(fname: &str) -> Result<()> {
 
     Ok(())
 }
-// part:1 ends here
+// core:1 ends here
 
 // main
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*main][main:1]]
-#[macro_use]
-extern crate quicli;
-use quicli::prelude::*;
+use guts::cli::*;
+use guts::prelude::*;
+
 use std::time;
 use structopt::StructOpt;
-
-type Result<T> = ::std::result::Result<T, Error>;
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -144,8 +154,9 @@ struct Cli {
 
 fn main() -> CliResult {
     let args = Cli::from_args();
-    println!("parsing {:}", &args.file);
+    setup_logger();
 
+    println!("parsing {:}", &args.file);
     let now = time::SystemTime::now();
     average_bond_orders(&args.file)?;
     let delta = now.elapsed()?.as_secs();

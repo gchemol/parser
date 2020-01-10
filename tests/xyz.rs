@@ -5,7 +5,8 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*xyz.rs][xyz.rs:1]]
 use guts::prelude::*;
-use text_parser::*;
+use text_parser::parsers::*;
+use text_parser::TextReader;
 
 /// A minimal representation for chemical atom.
 #[derive(Debug)]
@@ -28,16 +29,17 @@ impl Atom {
 /// # Example
 ///
 /// C -11.4286  1.7645  0.0000
-named!(read_atom_xyz<&str, Atom>,
+fn read_atom_xyz(s: &str) -> IResult<&str, Atom> {
     do_parse!(
-                  space0    >>                   // ignore optional preceeding space
-        sym     : alpha1    >> space1         >> // element symbol, e.g. "Fe"
-        position: xyz_array >> read_until_eol >> // ignore the remaining characters
+        s,
+        space0 >> // ignore optional preceeding space
+        sym     : alpha1    >> space1    >> // element symbol, e.g. "Fe"
+        position: xyz_array >> read_line >> // ignore the remaining characters
         (
             Atom::new(sym, position)
         )
     )
-);
+}
 
 #[test]
 fn test_parser_read_atom() {
@@ -46,33 +48,6 @@ fn test_parser_read_atom() {
     let (_, x) = read_atom_xyz(" C -11.4286 -1.3155  0.0000 \n").unwrap();
     assert_eq!("C", x.symbol);
     assert_eq!(0.0, x.position[2]);
-}
-
-/// read meta data in xyz format
-///
-/// # Example
-///
-/// 16
-/// this is comment line
-named!(read_meta<&str, (usize, &str)>,
-    do_parse!(
-        natoms : read_usize     >>
-        title  : read_until_eol >>
-        (
-            (natoms, title)
-        )
-    )
-);
-
-#[test]
-fn test_read_meta() {
-    let txt = "          16
- Configuration number :        7
-";
-
-    let (_, x) = read_meta(txt).unwrap();
-    assert_eq!(x.0, 16);
-    assert_eq!(x.1, " Configuration number :        7");
 }
 
 /// Create a list of atoms from many lines in xyz format
@@ -85,15 +60,19 @@ fn test_read_meta() {
 /// C -10.0949  0.9945  0.0000
 /// C -10.0949 -0.5455  0.0000
 ///
-fn read_xyz_stream(input: &str) -> IResult<&str, Vec<Atom>> {
-    let (rest, (natoms, _)) = read_meta(input)?;
-    many_m_n(natoms, natoms, read_atom_xyz)(rest)
+fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
+    let read_atoms = many1(read_atom_xyz);
+    do_parse!(
+        s,
+        read_line >>             // ignore title
+        atoms: read_atoms >>     // many atoms
+        (atoms)
+    )
 }
 
 #[test]
 fn test_parser_read_xyz() {
-    let txt = "          16
- Configuration number :        7
+    let txt = " Configuration number :        7
    N   1.38635  -0.29197   0.01352
    N  -1.38633   0.29227   0.00681
    C   0.91882   0.97077  -0.01878
@@ -118,8 +97,16 @@ fn test_parser_read_xyz() {
 #[test]
 fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
-    let parser = TextParser::default();
-    let parts: Vec<_> = parser.parse_file(fname, read_xyz_stream).collect();
+    let reader = TextReader::from_path(fname)?;
+    let parts: Vec<_> = reader
+        .records(|line| line.trim().parse::<usize>().is_ok())
+        .map(|(l, s)| {
+            let natoms: usize = l.trim().parse().unwrap();
+            let (_, atoms) = read_xyz_stream(&s).unwrap();
+            assert_eq!(natoms, atoms.len());
+            atoms
+        })
+        .collect();
 
     assert_eq!(parts.len(), 6);
 

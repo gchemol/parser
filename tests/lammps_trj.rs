@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use guts::prelude::*;
-use text_parser::*;
+use text_parser::parsers::*;
 // imports:1 ends here
 
 // meta
@@ -16,11 +16,14 @@ struct FrameData {
     natoms: usize,
 }
 
-named!(read_meta_data<&str, FrameData>,
+fn read_meta_data(s: &str) -> IResult<&str, FrameData> {
+    // let tag_timestep = tag("ITEM: TIMESTEP");
+    let tag_natoms = tag("ITEM: NUMBER OF ATOMS");
     do_parse!(
-                  tag!("ITEM: TIMESTEP")        >> eol >>
+        s,
+                  // tag_timestep >> eol >>
         timestep: read_usize                    >> // current timestep in this frame
-                  tag!("ITEM: NUMBER OF ATOMS") >> eol >>
+                  tag_natoms >> eol >>
         natoms  : read_usize                    >> // number of atoms
         (
             FrameData {
@@ -28,12 +31,11 @@ named!(read_meta_data<&str, FrameData>,
             }
         )
     )
-);
+}
 
 #[test]
 fn test_read_meta_data() {
-    let txt = "ITEM: TIMESTEP
-0
+    let txt = " 0
 ITEM: NUMBER OF ATOMS
 537
 ITEM: BOX BOUNDS pp pp pp
@@ -59,20 +61,22 @@ struct BoxData {
     c: String,
 }
 
-named!(read_box_data<&str, BoxData>,
-   do_parse!(
-          tag!("ITEM: BOX BOUNDS")   >>
-       t: read_until_eol >> //
-       a: read_until_eol >> //
-       b: read_until_eol >> //
-       c: read_until_eol >> //
-       (
-           BoxData {
-               t: t.into(), a: a.into(), b: b.into(), c: c.into()
-           }
-       )
-   )
-);
+fn read_box_data(s: &str) -> IResult<&str, BoxData> {
+    let tag_box_bounds = tag("ITEM: BOX BOUNDS");
+    do_parse!(
+        s,
+        tag_box_bounds >>
+        t: read_until_eol >> // xx
+        a: read_until_eol >> // xx
+        b: read_until_eol >> // xx
+        c: read_until_eol >> // xx
+        (
+            BoxData {
+                t: t.into(), a: a.into(), b: b.into(), c: c.into()
+            }
+        )
+    )
+}
 
 #[test]
 fn test_read_box_data() {
@@ -90,13 +94,15 @@ fn test_read_box_data() {
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*atoms][atoms:1]]
 // ITEM: ATOMS id type x y z c_eng c_cn c_cnt c_cna
-named!(read_atom_header<&str, &str>, do_parse!(
-            tag!("ITEM: ATOMS")     >>
-    header: read_until_eol          >> // the line including column headers
-    (
-        header
+fn read_atom_header(s: &str) -> IResult<&str, &str> {
+    let tag_item = tag("ITEM: ATOMS");
+    do_parse!(
+        s,
+        tag_item     >>
+        header: read_until_eol >> // the line including column headers
+        (header)
     )
-));
+}
 
 #[test]
 fn test_read_atom_header() {
@@ -210,9 +216,16 @@ fn read_lammps_dump(input: &str) -> IResult<&str, HashMap<usize, Atom>> {
 
 #[test]
 fn test_parser() -> Result<()> {
+    use text_parser::TextReader;
     let fname = "tests/files/lammps-test.dump";
-    let parser = TextParser::default();
-    let frames: Vec<_> = parser.parse_file(fname, read_lammps_dump).collect();
+    let reader = TextReader::from_path(fname)?;
+    let frames: Vec<_> = reader
+        .records(|line| line.starts_with("ITEM: TIMESTEP"))
+        .map(|(_label, data)| {
+            let (_, part) = read_lammps_dump(&data).unwrap();
+            part
+        })
+        .collect();
     assert_eq!(frames.len(), 3);
 
     Ok(())
