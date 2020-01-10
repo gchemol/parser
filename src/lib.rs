@@ -22,5 +22,5 @@ pub use crate::core::*;
 pub use crate::parser::*;
 
 // #[cfg(feature = "adhoc")]
-// pub use crate::adhoc as parser;
+pub use crate::adhoc::*;
 // re-exports:1 ends here

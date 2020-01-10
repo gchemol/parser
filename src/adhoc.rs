@@ -68,17 +68,17 @@ fn test() {
 }
 // base:1 ends here
 
-// parser
+// reader
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*parser][parser:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*reader][reader:1]]
 type FileReader = BufReader<File>;
 
 #[derive(Debug)]
-pub struct TextParser {
+pub struct TextReader {
     reader: FileReader,
 }
 
-impl TextParser {
+impl TextReader {
     /// Build a text parser for file from path `p`.
     pub fn from_path<P: AsRef<Path>>(p: P) -> Result<Self> {
         let reader = text_file_reader(p)?;
@@ -130,14 +130,14 @@ fn read_chunk<R: Read>(r: R, nlines: usize) -> impl Iterator<Item = String> {
         }
     })
 }
-// parser:1 ends here
+// reader:1 ends here
 
 // parts
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*parts][parts:1]]
-impl TextParser {
-    /// Parse data records separated by a data label line.
-    pub fn parse_records<F>(self, label_fn: F) -> DataRecords<F>
+impl TextReader {
+    /// Split into multiple parts separated by a data label line.
+    pub fn split_if<F>(self, label_fn: F) -> DataRecords<F>
     where
         F: Fn(&str) -> bool,
     {
@@ -158,32 +158,46 @@ impl<F> Iterator for DataRecords<F>
 where
     F: Fn(&str) -> bool,
 {
-    type Item = (String, String);
+    type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut data_lines = String::new();
-        while let Some(line) = self.lines.next() {
-            let line = line.unwrap();
-            if (self.is_data_label)(&line) {
-                let head = self.label.to_string();
-                self.label = line.to_string();
-                // skip the first empty line
-                if !head.is_empty() {
-                    return Some((head, data_lines));
+        let mut data_lines = String::from(&self.label);
+        loop {
+            match self.lines.next() {
+                // label line
+                Some(Ok(line)) if (self.is_data_label)(&line) => {
+                    // safe data label
+                    let head = self.label.to_string();
+                    self.label = line;
+                    self.label += "\n";
+                    // ignore empty record
+                    if !data_lines.is_empty() {
+                        return Some(data_lines);
+                    }
                 }
-            } else {
-                data_lines += &line;
-                // the line ending
-                data_lines += "\n";
+                // normal line
+                Some(Ok(line)) => {
+                    data_lines += &line;
+                    data_lines += "\n";
+                }
+                // reach EOF
+                None => {
+                    break;
+                }
+                Some(Err(e)) => {
+                    error!("read line error:\n {}", e);
+                    return None;
+                }
             }
         }
-        // Handle the final section
-        if self.label.is_empty() {
-            None
+        // handle final record
+        if data_lines.is_empty() {
+            return None;
         } else {
-            let head = self.label.to_string();
+            let part = data_lines.clone();
             self.label.clear();
-            Some((head, data_lines))
+            data_lines.clear();
+            return Some(part);
         }
     }
 }
@@ -208,18 +222,21 @@ where
 #[test]
 fn test_parser() {
     let f = "./tests/files/lammps-test.dump";
-    let parser = TextParser::from_path(f).unwrap();
-    let records = parser.parse_records(|line| line.starts_with("ITEM: TIMESTEP"));
+    let parser = TextReader::from_path(f).unwrap();
+    let records = parser.split_if(|line| line.starts_with("ITEM: TIMESTEP"));
     assert_eq!(records.count(), 3);
 
     let f = "./tests/files/multi.xyz";
-    let parser = TextParser::from_path(f).unwrap();
-    let records = parser.parse_records(|line| line.trim().parse::<usize>().is_ok());
+    let parser = TextReader::from_path(f).unwrap();
+    let records = parser.split_if(|line| line.trim().parse::<usize>().is_ok());
     assert_eq!(records.count(), 6);
+    // for (i, p) in records.take(3).enumerate() {
+    //     println!("{} => {}", i, p);
+    // }
 
-    let parser = TextParser::from_path(f).unwrap();
+    let parser = TextReader::from_path(f).unwrap();
     for chunk in parser.chunks(5) {
-        dbg!(chunk.lines().count());
+        // dbg!(chunk.lines().count());
     }
 }
 // test:1 ends here
