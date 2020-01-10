@@ -50,29 +50,6 @@ fn test_parser_read_atom() {
     assert_eq!(0.0, x.position[2]);
 }
 
-/// read meta data in xyz format
-///
-/// # Example
-///
-/// 16
-/// this is comment line
-fn read_meta(s: &str) -> IResult<&str, (usize, &str)> {
-    do_parse!(
-        s,
-        natoms: read_usize >> title: read_until_eol >> ((natoms, title))
-    )
-}
-
-#[test]
-fn test_read_meta() {
-    let txt = "          16
- Configuration number :        7
-";
-
-    let (_, x) = read_meta(txt).unwrap();
-    assert_eq!(x.0, 16);
-    assert_eq!(x.1, " Configuration number :        7");
-}
 /// Create a list of atoms from many lines in xyz format
 ///
 /// # Example
@@ -83,15 +60,19 @@ fn test_read_meta() {
 /// C -10.0949  0.9945  0.0000
 /// C -10.0949 -0.5455  0.0000
 ///
-fn read_xyz_stream(input: &str) -> IResult<&str, Vec<Atom>> {
-    let (rest, (natoms, _)) = read_meta(input)?;
-    many_m_n(natoms, natoms, read_atom_xyz)(rest)
+fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
+    let read_atoms = many1(read_atom_xyz);
+    do_parse!(
+        s,
+        read_line >>             // ignore title
+        atoms: read_atoms >>     // many atoms
+        (atoms)
+    )
 }
 
 #[test]
 fn test_parser_read_xyz() {
-    let txt = "          16
- Configuration number :        7
+    let txt = " Configuration number :        7
    N   1.38635  -0.29197   0.01352
    N  -1.38633   0.29227   0.00681
    C   0.91882   0.97077  -0.01878
@@ -118,10 +99,12 @@ fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
     let reader = TextReader::from_path(fname)?;
     let parts: Vec<_> = reader
-        .split_if(|line| line.trim().parse::<usize>().is_ok())
-        .map(|s| {
-            let (_, part) = read_xyz_stream(&s).unwrap();
-            part
+        .records(|line| line.trim().parse::<usize>().is_ok())
+        .map(|(l, s)| {
+            let natoms: usize = l.trim().parse().unwrap();
+            let (_, atoms) = read_xyz_stream(&s).unwrap();
+            assert_eq!(natoms, atoms.len());
+            atoms
         })
         .collect();
 

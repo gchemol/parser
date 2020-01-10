@@ -17,11 +17,11 @@ struct FrameData {
 }
 
 fn read_meta_data(s: &str) -> IResult<&str, FrameData> {
-    let tag_timestep = tag("ITEM: TIMESTEP");
+    // let tag_timestep = tag("ITEM: TIMESTEP");
     let tag_natoms = tag("ITEM: NUMBER OF ATOMS");
     do_parse!(
         s,
-                  tag_timestep >> eol >>
+                  // tag_timestep >> eol >>
         timestep: read_usize                    >> // current timestep in this frame
                   tag_natoms >> eol >>
         natoms  : read_usize                    >> // number of atoms
@@ -35,8 +35,7 @@ fn read_meta_data(s: &str) -> IResult<&str, FrameData> {
 
 #[test]
 fn test_read_meta_data() {
-    let txt = "ITEM: TIMESTEP
-0
+    let txt = " 0
 ITEM: NUMBER OF ATOMS
 537
 ITEM: BOX BOUNDS pp pp pp
@@ -221,9 +220,9 @@ fn test_parser() -> Result<()> {
     let fname = "tests/files/lammps-test.dump";
     let reader = TextReader::from_path(fname)?;
     let frames: Vec<_> = reader
-        .split_if(|line| line.starts_with("ITEM: TIMESTEP"))
-        .map(|s| {
-            let (_, part) = read_lammps_dump(&s).unwrap();
+        .records(|line| line.starts_with("ITEM: TIMESTEP"))
+        .map(|(_label, data)| {
+            let (_, part) = read_lammps_dump(&data).unwrap();
             part
         })
         .collect();

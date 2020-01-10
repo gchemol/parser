@@ -69,20 +69,20 @@ fn read_chunk<R: Read>(r: R, nlines: usize) -> impl Iterator<Item = String> {
 }
 // reader:1 ends here
 
-// parts
+// records
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*parts][parts:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*records][records:1]]
 impl TextReader {
-    /// Split into multiple parts separated by a data label line.
-    pub fn split_if<F>(self, label_fn: F) -> DataRecords<F>
+    /// Split into multiple records separated by a label line.
+    pub fn records<F>(self, label_fn: F) -> Records<F>
     where
         F: Fn(&str) -> bool,
     {
-        DataRecords::new(self.reader, label_fn)
+        Records::new(self.reader, label_fn)
     }
 }
 
-pub struct DataRecords<F>
+pub struct Records<F>
 where
     F: Fn(&str) -> bool,
 {
@@ -91,11 +91,11 @@ where
     is_data_label: F,
 }
 
-impl<F> Iterator for DataRecords<F>
+impl<F> Iterator for Records<F>
 where
     F: Fn(&str) -> bool,
 {
-    type Item = String;
+    type Item = (String, String);
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut data_lines = String::new();
@@ -103,12 +103,12 @@ where
             match self.lines.next() {
                 // label line
                 Some(Ok(line)) if (self.is_data_label)(&line) => {
-                    // safe data label
                     let head = self.label.to_string();
+                    // save data label
                     self.label = line;
                     // ignore empty record
                     if !data_lines.is_empty() {
-                        return Some(format!("{}\n{}", head, data_lines));
+                        return Some((head, data_lines));
                     }
                 }
                 // normal line
@@ -128,7 +128,7 @@ where
         }
         // handle final record
         if !data_lines.is_empty() {
-            let part = format!("{}\n{}", self.label, data_lines);
+            let part = (self.label.clone(), data_lines.clone());
             data_lines.clear();
             return Some(part);
         } else {
@@ -137,7 +137,7 @@ where
     }
 }
 
-impl<F> DataRecords<F>
+impl<F> Records<F>
 where
     F: Fn(&str) -> bool,
 {
@@ -149,7 +149,7 @@ where
         }
     }
 }
-// parts:1 ends here
+// records:1 ends here
 
 // test
 
@@ -158,16 +158,16 @@ where
 fn test_parser() {
     let f = "./tests/files/lammps-test.dump";
     let reader = TextReader::from_path(f).unwrap();
-    let records = reader.split_if(|line| line.starts_with("ITEM: TIMESTEP"));
+    let records = reader.records(|line| line.starts_with("ITEM: TIMESTEP"));
     assert_eq!(records.count(), 3);
 
     let f = "./tests/files/multi.xyz";
     let reader = TextReader::from_path(f).unwrap();
-    let records = reader.split_if(|line| line.trim().parse::<usize>().is_ok());
-    assert_eq!(records.count(), 6);
-    // for (i, p) in records.take(3).enumerate() {
-    //     println!("{} => {}", i, p);
-    // }
+    let records = reader.records(|line| line.trim().parse::<usize>().is_ok());
+    for (_label, _data) in records {
+        // dbg!(_label);
+        // dbg!(_data);
+    }
 
     let reader = TextReader::from_path(f).unwrap();
     for chunk in reader.chunks(5) {
