@@ -106,8 +106,8 @@ where
                     let head = self.label.to_string();
                     // save data label
                     self.label = line;
-                    // ignore empty record
-                    if !data_lines.is_empty() {
+                    // skip the first empty line
+                    if !head.is_empty() {
                         return Some((head, data_lines));
                     }
                 }
@@ -162,9 +162,10 @@ fn test_parser() {
     assert_eq!(records.count(), 3);
 
     let f = "./tests/files/multi.xyz";
+    let if_data_label = |line: &str| line.trim().parse::<usize>().is_ok();
     let reader = TextReader::from_path(f).unwrap();
-    let records = reader.records(|line| line.trim().parse::<usize>().is_ok());
-    for (_label, _data) in records {
+    let records = reader.records(if_data_label);
+    for (_label, _data) in records.take(5) {
         // dbg!(_label);
         // dbg!(_data);
     }
