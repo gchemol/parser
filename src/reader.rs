@@ -98,7 +98,7 @@ where
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut data_lines = String::from(&self.label);
+        let mut data_lines = String::new();
         loop {
             match self.lines.next() {
                 // label line
@@ -106,10 +106,9 @@ where
                     // safe data label
                     let head = self.label.to_string();
                     self.label = line;
-                    self.label += "\n";
                     // ignore empty record
                     if !data_lines.is_empty() {
-                        return Some(data_lines);
+                        return Some(format!("{}\n{}", head, data_lines));
                     }
                 }
                 // normal line
@@ -128,13 +127,12 @@ where
             }
         }
         // handle final record
-        if data_lines.is_empty() {
-            return None;
-        } else {
-            let part = data_lines.clone();
-            self.label.clear();
+        if !data_lines.is_empty() {
+            let part = format!("{}\n{}", self.label, data_lines);
             data_lines.clear();
             return Some(part);
+        } else {
+            return None;
         }
     }
 }

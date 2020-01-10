@@ -5,8 +5,8 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*xyz.rs][xyz.rs:1]]
 use guts::prelude::*;
-use text_parser::old::*;
-use text_parser::*;
+use text_parser::parsers::*;
+use text_parser::TextReader;
 
 /// A minimal representation for chemical atom.
 #[derive(Debug)]
@@ -29,16 +29,17 @@ impl Atom {
 /// # Example
 ///
 /// C -11.4286  1.7645  0.0000
-named!(read_atom_xyz<&str, Atom>,
+fn read_atom_xyz(s: &str) -> IResult<&str, Atom> {
     do_parse!(
-                  space0    >>                   // ignore optional preceeding space
-        sym     : alpha1    >> space1         >> // element symbol, e.g. "Fe"
-        position: xyz_array >> read_until_eol >> // ignore the remaining characters
+        s,
+        space0 >> // ignore optional preceeding space
+        sym     : alpha1    >> space1    >> // element symbol, e.g. "Fe"
+        position: xyz_array >> read_line >> // ignore the remaining characters
         (
             Atom::new(sym, position)
         )
     )
-);
+}
 
 #[test]
 fn test_parser_read_atom() {
@@ -55,15 +56,12 @@ fn test_parser_read_atom() {
 ///
 /// 16
 /// this is comment line
-named!(read_meta<&str, (usize, &str)>,
+fn read_meta(s: &str) -> IResult<&str, (usize, &str)> {
     do_parse!(
-        natoms : read_usize     >>
-        title  : read_until_eol >>
-        (
-            (natoms, title)
-        )
+        s,
+        natoms: read_usize >> title: read_until_eol >> ((natoms, title))
     )
-);
+}
 
 #[test]
 fn test_read_meta() {
@@ -75,7 +73,6 @@ fn test_read_meta() {
     assert_eq!(x.0, 16);
     assert_eq!(x.1, " Configuration number :        7");
 }
-
 /// Create a list of atoms from many lines in xyz format
 ///
 /// # Example
@@ -119,8 +116,14 @@ fn test_parser_read_xyz() {
 #[test]
 fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
-    let parser = TextParser::default();
-    let parts: Vec<_> = parser.parse_file(fname, read_xyz_stream).collect();
+    let reader = TextReader::from_path(fname)?;
+    let parts: Vec<_> = reader
+        .split_if(|line| line.trim().parse::<usize>().is_ok())
+        .map(|s| {
+            let (_, part) = read_xyz_stream(&s).unwrap();
+            part
+        })
+        .collect();
 
     assert_eq!(parts.len(), 6);
 

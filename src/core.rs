@@ -19,6 +19,7 @@ pub use nom::branch::alt;
 
 // multi
 pub use nom::multi::count;
+pub use nom::multi::many_m_n;
 
 pub use nom::sequence::terminated;
 // base:1 ends here

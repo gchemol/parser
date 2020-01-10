@@ -4,7 +4,7 @@
 use std::fs::File;
 use text_parser::*;
 
-use text_parser::new::*;
+use text_parser::parsers::*;
 // imports:1 ends here
 
 //    2 1 3 1 3 14 0         1.324         1.345         1.300         3.969         0.000         0.193
