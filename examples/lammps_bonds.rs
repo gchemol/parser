@@ -152,7 +152,7 @@ struct Cli {
     file: String,
 }
 
-fn main() -> CliResult {
+fn main() -> Result<()> {
     let args = Cli::from_args();
     setup_logger();
 

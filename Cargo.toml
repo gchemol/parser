@@ -8,7 +8,7 @@ edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
-guts = { git = "https://github.com/ybyygu/guts.git" }
+guts = { git = "https://github.com/ybyygu/guts.git", branch="dev" }
 #guts = { path = "../../guts" }
 nom = "5"
 
@@ -16,6 +16,5 @@ nom = "5"
 structopt = "0.3"
 
 [features]
-streaming = []
 adhoc = []
 # cargo:1 ends here

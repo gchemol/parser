@@ -8,7 +8,6 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*base][base:1]]
 pub use nom;
-pub use nom::multi::{many0, many1};
 pub use nom::IResult;
 
 // macros
@@ -20,8 +19,14 @@ pub use nom::branch::alt;
 // multi
 pub use nom::multi::count;
 pub use nom::multi::many_m_n;
+pub use nom::multi::{many0, many1};
 
-pub use nom::sequence::terminated;
+pub use nom::sequence::{preceded, terminated};
+
+// combinator
+pub use nom::combinator::map;
+pub use nom::combinator::not;
+pub use nom::combinator::opt;
 // base:1 ends here
 
 // complete or streaming
@@ -30,7 +35,7 @@ pub use nom::sequence::terminated;
 macro_rules! nom_use {
     ($input:ident) => {
         pub use nom::bytes::$input::tag;
-        pub use nom::bytes::$input::take_until;
+        pub use nom::bytes::$input::{take, take_until};
         pub use nom::character::$input::{alpha0, alpha1};
         pub use nom::character::$input::{alphanumeric0, alphanumeric1};
         pub use nom::character::$input::{digit0, digit1};
