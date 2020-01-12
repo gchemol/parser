@@ -99,11 +99,10 @@ fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
     let reader = TextReader::from_path(fname)?;
     let parts: Vec<_> = reader
-        .records(|line| line.trim().parse::<usize>().is_ok())
-        .map(|(l, s)| {
-            let natoms: usize = l.trim().parse().unwrap();
+        .bunches(|line| line.trim().parse::<usize>().is_ok())
+        .map(|bunch| {
+            let s = bunch.into_iter().skip(1).join("\n");
             let (_, atoms) = read_xyz_stream(&s).unwrap();
-            assert_eq!(natoms, atoms.len());
             atoms
         })
         .collect();

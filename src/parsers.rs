@@ -48,8 +48,6 @@ pub fn not_space(s: &str) -> IResult<&str, &str> {
 
 /// Match one unsigned integer: 123
 pub fn unsigned_digit(s: &str) -> IResult<&str, usize> {
-    use nom::combinator::map;
-
     map(digit1, |s: &str| s.parse().unwrap())(s)
 }
 
@@ -85,7 +83,6 @@ pub fn xyz_array(s: &str) -> IResult<&str, [f64; 3]> {
 
 /// Take and consuming to `token`.
 pub fn jump_to<'a>(token: &'a str) -> impl Fn(&'a str) -> IResult<&str, ()> {
-    use nom::combinator::map;
     use nom::sequence::pair;
 
     map(pair(take_until(token), tag(token)), |_| ())

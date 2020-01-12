@@ -17,14 +17,14 @@ struct FrameData {
 }
 
 fn read_meta_data(s: &str) -> IResult<&str, FrameData> {
-    // let tag_timestep = tag("ITEM: TIMESTEP");
+    let tag_timestep = tag("ITEM: TIMESTEP");
     let tag_natoms = tag("ITEM: NUMBER OF ATOMS");
     do_parse!(
         s,
-                  // tag_timestep >> eol >>
-        timestep: read_usize                    >> // current timestep in this frame
+                  tag_timestep >> eol >>
+        timestep: read_usize  >> // current timestep in this frame
                   tag_natoms >> eol >>
-        natoms  : read_usize                    >> // number of atoms
+        natoms  : read_usize  >> // number of atoms
         (
             FrameData {
                 timestep, natoms
@@ -35,7 +35,8 @@ fn read_meta_data(s: &str) -> IResult<&str, FrameData> {
 
 #[test]
 fn test_read_meta_data() {
-    let txt = " 0
+    let txt = "ITEM: TIMESTEP
+ 0
 ITEM: NUMBER OF ATOMS
 537
 ITEM: BOX BOUNDS pp pp pp
@@ -66,10 +67,10 @@ fn read_box_data(s: &str) -> IResult<&str, BoxData> {
     do_parse!(
         s,
         tag_box_bounds >>
-        t: read_until_eol >> // xx
-        a: read_until_eol >> // xx
-        b: read_until_eol >> // xx
-        c: read_until_eol >> // xx
+        t: read_until_eol >> // pp pp pp
+        a: read_until_eol >> // -200.487 200.487
+        b: read_until_eol >> // -200.487 200.487
+        c: read_until_eol >> // -200.487 200.487
         (
             BoxData {
                 t: t.into(), a: a.into(), b: b.into(), c: c.into()
@@ -98,7 +99,7 @@ fn read_atom_header(s: &str) -> IResult<&str, &str> {
     let tag_item = tag("ITEM: ATOMS");
     do_parse!(
         s,
-        tag_item     >>
+        tag_item >>
         header: read_until_eol >> // the line including column headers
         (header)
     )
@@ -220,8 +221,13 @@ fn test_parser() -> Result<()> {
     let fname = "tests/files/lammps-test.dump";
     let reader = TextReader::from_path(fname)?;
     let frames: Vec<_> = reader
-        .records(|line| line.starts_with("ITEM: TIMESTEP"))
-        .map(|(_label, data)| {
+        .bunches(|line| line.starts_with("ITEM: TIMESTEP"))
+        .map(|bunch| {
+            let mut data = String::new();
+            for line in bunch {
+                data += &line;
+                data += "\n";
+            }
             let (_, part) = read_lammps_dump(&data).unwrap();
             part
         })

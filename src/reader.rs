@@ -30,8 +30,11 @@ impl TextReader {
 
     /// Returns an iterator over the lines of this reader. Each string returned
     /// will not have a line ending.
-    pub fn lines(self) -> std::io::Lines<FileReader> {
-        self.reader.lines()
+    pub fn lines(self) -> impl Iterator<Item = String> {
+        // silently ignore UTF-8 error
+        self.reader
+            .lines()
+            .filter_map(|s| if let Ok(line) = s { Some(line) } else { None })
     }
 }
 
@@ -69,87 +72,89 @@ fn read_chunk<R: Read>(r: R, nlines: usize) -> impl Iterator<Item = String> {
 }
 // reader:1 ends here
 
-// records
+// bunches
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*records][records:1]]
-impl TextReader {
-    /// Split into multiple records separated by a label line.
-    pub fn records<F>(self, label_fn: F) -> Records<F>
-    where
-        F: Fn(&str) -> bool,
-    {
-        Records::new(self.reader, label_fn)
-    }
-}
-
-pub struct Records<F>
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*bunches][bunches:1]]
+pub struct Bunches_<F>
 where
     F: Fn(&str) -> bool,
 {
-    label: String,
-    lines: std::io::Lines<FileReader>,
+    lines: std::iter::Peekable<std::io::Lines<FileReader>>,
     is_data_label: F,
 }
 
-impl<F> Iterator for Records<F>
-where
-    F: Fn(&str) -> bool,
-{
-    type Item = (String, String);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut data_lines = String::new();
-        loop {
-            match self.lines.next() {
-                // label line
-                Some(Ok(line)) if (self.is_data_label)(&line) => {
-                    let head = self.label.to_string();
-                    // save data label
-                    self.label = line;
-                    // skip the first empty line
-                    if !head.is_empty() {
-                        return Some((head, data_lines));
-                    }
-                }
-                // normal line
-                Some(Ok(line)) => {
-                    data_lines += &line;
-                    data_lines += "\n";
-                }
-                // reach EOF
-                None => {
-                    break;
-                }
-                Some(Err(e)) => {
-                    error!("read line error:\n {}", e);
-                    return None;
-                }
-            }
-        }
-        // handle final record
-        if !data_lines.is_empty() {
-            let part = (self.label.clone(), data_lines.clone());
-            data_lines.clear();
-            return Some(part);
-        } else {
-            return None;
-        }
+impl TextReader {
+    /// Return an iterator over a bunch of lines preceded by a label line.
+    pub fn bunches<F>(self, label_fn: F) -> Bunches<F>
+    where
+        F: Fn(&str) -> bool,
+    {
+        Bunches::new(self.reader, label_fn)
     }
 }
 
-impl<F> Records<F>
+pub struct Bunches<F>
+where
+    F: Fn(&str) -> bool,
+{
+    lines: std::iter::Peekable<std::io::Lines<FileReader>>,
+    is_data_label: F,
+}
+
+impl<F> Bunches<F>
 where
     F: Fn(&str) -> bool,
 {
     fn new(reader: FileReader, f: F) -> Self {
         Self {
-            lines: reader.lines(),
-            label: String::new(),
+            lines: reader.lines().peekable(),
             is_data_label: f,
         }
     }
 }
-// records:1 ends here
+
+impl<F> Iterator for Bunches<F>
+where
+    F: Fn(&str) -> bool,
+{
+    type Item = Vec<String>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut chunk = vec![];
+        loop {
+            match self.lines.next() {
+                Some(Ok(line)) => {
+                    chunk.push(line);
+                    // check next line to decide if return
+                    match self.lines.peek() {
+                        Some(Ok(next_line)) => {
+                            if (self.is_data_label)(next_line) {
+                                return Some(chunk);
+                            }
+                        }
+                        Some(Err(e)) => {
+                            warn!("found reading error: {}", e);
+                        }
+                        None => {
+                            // reach eof
+                            return Some(chunk);
+                        }
+                    }
+                }
+                Some(Err(e)) => {
+                    // ignore
+                    warn!("found reading error: {}", e);
+                }
+                None => {
+                    // reach eof
+                    break;
+                }
+            }
+        }
+        None
+    }
+}
+// bunches:1 ends here
 
 // test
 
@@ -158,17 +163,20 @@ where
 fn test_parser() {
     let f = "./tests/files/lammps-test.dump";
     let reader = TextReader::from_path(f).unwrap();
-    let records = reader.records(|line| line.starts_with("ITEM: TIMESTEP"));
-    assert_eq!(records.count(), 3);
+    let bunches = reader.bunches(|line| line.starts_with("ITEM: TIMESTEP"));
+    assert_eq!(bunches.count(), 3);
 
     let f = "./tests/files/multi.xyz";
+    // let f = "/home/ybyygu/Workspace/Programming/gosh-rs/adaptors/tests/files/gaussian/Test.FChk";
     let if_data_label = |line: &str| line.trim().parse::<usize>().is_ok();
+    // let if_data_label =
+    //     |line: &str| line.len() >= 50 && line.chars().next().unwrap().is_uppercase();
     let reader = TextReader::from_path(f).unwrap();
-    let records = reader.records(if_data_label);
-    for (_label, _data) in records.take(5) {
-        // dbg!(_label);
-        // dbg!(_data);
-    }
+    let bunches = reader.bunches(if_data_label);
+    assert_eq!(bunches.count(), 6);
+    // for b in bunches.take(20) {
+    //     dbg!(b);
+    // }
 
     let reader = TextReader::from_path(f).unwrap();
     for chunk in reader.chunks(5) {
