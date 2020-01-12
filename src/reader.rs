@@ -160,27 +160,29 @@ where
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
 #[test]
-fn test_parser() {
+fn test_parser() -> Result<()> {
     let f = "./tests/files/lammps-test.dump";
-    let reader = TextReader::from_path(f).unwrap();
+    let reader = TextReader::from_path(f)?;
     let bunches = reader.bunches(|line| line.starts_with("ITEM: TIMESTEP"));
     assert_eq!(bunches.count(), 3);
 
     let f = "./tests/files/multi.xyz";
-    // let f = "/home/ybyygu/Workspace/Programming/gosh-rs/adaptors/tests/files/gaussian/Test.FChk";
     let if_data_label = |line: &str| line.trim().parse::<usize>().is_ok();
-    // let if_data_label =
-    //     |line: &str| line.len() >= 50 && line.chars().next().unwrap().is_uppercase();
-    let reader = TextReader::from_path(f).unwrap();
+    let reader = TextReader::from_path(f)?;
     let bunches = reader.bunches(if_data_label);
     assert_eq!(bunches.count(), 6);
-    // for b in bunches.take(20) {
-    //     dbg!(b);
-    // }
 
-    let reader = TextReader::from_path(f).unwrap();
+    // test chunks
+    let reader = TextReader::from_path(f)?;
     for chunk in reader.chunks(5) {
         // dbg!(chunk.lines().count());
     }
+
+    // test lines
+    let reader = TextReader::from_path(f)?;
+    let line = reader.lines().skip(1).next().unwrap();
+    assert_eq!(line, " Configuration number :        7");
+
+    Ok(())
 }
 // test:1 ends here
