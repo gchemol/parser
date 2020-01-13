@@ -26,8 +26,8 @@ fn test_read_line() {
 
 /// Read the remaining line. Return a line excluding eol.
 pub fn read_until_eol(s: &str) -> IResult<&str, &str> {
-    use nom::character::complete::not_line_ending;
     use nom::character::complete::line_ending;
+    use nom::character::complete::not_line_ending;
 
     nom::sequence::terminated(not_line_ending, line_ending)(s)
 }
@@ -93,5 +93,13 @@ fn test_take() {
     let x = "xxbcc aa cc";
     let (r, _) = jump_to("aa")(x).unwrap();
     assert_eq!(r, " cc");
+}
+
+/// Return and consume n elements from input string slice.
+///
+/// Why not use take directly: for avoiding compiling error when using in
+/// do_parse macro.
+pub fn take_s<'a>(n: usize) -> impl Fn(&'a str) -> IResult<&'a str, &'a str> {
+    take(n)
 }
 // base:1 ends here
