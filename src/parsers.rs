@@ -51,6 +51,26 @@ pub fn unsigned_digit(s: &str) -> IResult<&str, usize> {
     map(digit1, |s: &str| s.parse().unwrap())(s)
 }
 
+pub fn signed_digit(s: &str) -> IResult<&str, isize> {
+    use nom::combinator::recognize;
+    let sign = opt(alt((tag("-"), tag("+"))));
+    map_res(recognize(pair(sign, digit1)), |x: &str| x.parse::<isize>())(s)
+}
+
+#[test]
+fn test_signed_digit() -> Result<()> {
+    let (_, x) = signed_digit("-123")?;
+    assert_eq!(x, -123);
+
+    let (_, x) = signed_digit("123")?;
+    assert_eq!(x, 123);
+
+    let (_, x) = signed_digit("+123")?;
+    assert_eq!(x, 123);
+
+    Ok(())
+}
+
 /// Parse a line containing an unsigned integer number.
 pub fn read_usize(s: &str) -> IResult<&str, usize> {
     use nom::character::complete::line_ending;

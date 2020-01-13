@@ -20,8 +20,9 @@ pub use nom::branch::alt;
 pub use nom::multi::count;
 pub use nom::multi::many_m_n;
 pub use nom::multi::{many0, many1, many_till};
+pub use nom::multi::{separated_list, separated_nonempty_list};
 
-pub use nom::sequence::{pair, preceded, terminated};
+pub use nom::sequence::{pair, preceded, terminated, tuple};
 
 // combinator
 pub use nom::combinator::not;
