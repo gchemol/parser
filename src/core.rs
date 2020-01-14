@@ -22,7 +22,7 @@ pub use nom::multi::many_m_n;
 pub use nom::multi::{many0, many1, many_till};
 pub use nom::multi::{separated_list, separated_nonempty_list};
 
-pub use nom::sequence::{pair, preceded, terminated, tuple};
+pub use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 
 // combinator
 pub use nom::combinator::not;
@@ -35,6 +35,7 @@ pub use nom::combinator::{map, map_opt, map_res};
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*complete or streaming][complete or streaming:1]]
 macro_rules! nom_use {
     ($input:ident) => {
+        pub use nom::bytes::$input::{is_a, is_not};
         pub use nom::bytes::$input::{tag, tag_no_case};
         pub use nom::bytes::$input::{take, take_until};
         pub use nom::character::$input::one_of;

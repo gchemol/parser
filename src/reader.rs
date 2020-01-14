@@ -39,7 +39,9 @@ impl TextReader {
 }
 
 fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
-    let f = File::open(p.as_ref())?;
+    let p = p.as_ref();
+    let f = File::open(p).with_context(|| format!("Failed to open file {:?}", p))?;
+
     let reader = BufReader::new(f);
     Ok(reader)
 }
