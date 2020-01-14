@@ -58,17 +58,15 @@ pub fn signed_digit(s: &str) -> IResult<&str, isize> {
 }
 
 #[test]
-fn test_signed_digit() -> Result<()> {
-    let (_, x) = signed_digit("-123")?;
+fn test_signed_digit() {
+    let (_, x) = signed_digit("-123").expect("signed digit, minus");
     assert_eq!(x, -123);
 
-    let (_, x) = signed_digit("123")?;
+    let (_, x) = signed_digit("123").expect("signed digit, normal");
     assert_eq!(x, 123);
 
-    let (_, x) = signed_digit("+123")?;
+    let (_, x) = signed_digit("+123").expect("signed digit, plus");
     assert_eq!(x, 123);
-
-    Ok(())
 }
 
 /// Parse a line containing an unsigned integer number.

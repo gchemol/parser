@@ -9,6 +9,5 @@ pub mod parsers;
 // exports
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*exports][exports:1]]
-pub use crate::core::*;
 pub use crate::reader::*;
 // exports:1 ends here
