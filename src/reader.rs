@@ -77,14 +77,6 @@ fn read_chunk<R: Read>(r: R, nlines: usize) -> impl Iterator<Item = String> {
 // bunches
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*bunches][bunches:1]]
-pub struct Bunches_<F>
-where
-    F: Fn(&str) -> bool,
-{
-    lines: std::iter::Peekable<std::io::Lines<FileReader>>,
-    is_data_label: F,
-}
-
 impl TextReader {
     /// Return an iterator over a bunch of lines preceded by a label line.
     pub fn bunches<F>(self, label_fn: F) -> Bunches<F>
