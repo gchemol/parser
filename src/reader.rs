@@ -11,18 +11,29 @@ use guts::fs::*;
 type FileReader = BufReader<File>;
 
 #[derive(Debug)]
-pub struct TextReader {
-    reader: FileReader,
+pub struct TextReader<R: BufRead> {
+    reader: R,
 }
 
-impl TextReader {
-    /// Build a text parser for file from path `p`.
+impl TextReader<FileReader> {
+    /// Build a text reader for file from path `p`.
     pub fn from_path<P: AsRef<Path>>(p: P) -> Result<Self> {
         let reader = text_file_reader(p)?;
         let parser = Self { reader };
         Ok(parser)
     }
+}
 
+impl<R: Read> TextReader<BufReader<R>> {
+    /// Build a text reader from a struct implementing Read trait.
+    pub fn new(r: R) -> Self {
+        Self {
+            reader: BufReader::new(r),
+        }
+    }
+}
+
+impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over `n` lines at a time.
     pub fn chunks(self, nlines: usize) -> impl Iterator<Item = String> {
         read_chunk(self.reader, nlines)
@@ -77,9 +88,9 @@ fn read_chunk<R: Read>(r: R, nlines: usize) -> impl Iterator<Item = String> {
 // bunches
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*bunches][bunches:1]]
-impl TextReader {
+impl<R: BufRead> TextReader<R> {
     /// Return an iterator over a bunch of lines preceded by a label line.
-    pub fn bunches<F>(self, label_fn: F) -> Bunches<F>
+    pub fn bunches<F>(self, label_fn: F) -> Bunches<F, R>
     where
         F: Fn(&str) -> bool,
     {
@@ -87,19 +98,21 @@ impl TextReader {
     }
 }
 
-pub struct Bunches<F>
+pub struct Bunches<F, R>
 where
     F: Fn(&str) -> bool,
+    R: BufRead,
 {
-    lines: std::iter::Peekable<std::io::Lines<FileReader>>,
+    lines: std::iter::Peekable<std::io::Lines<R>>,
     is_data_label: F,
 }
 
-impl<F> Bunches<F>
+impl<F, R> Bunches<F, R>
 where
     F: Fn(&str) -> bool,
+    R: BufRead,
 {
-    fn new(reader: FileReader, f: F) -> Self {
+    fn new(reader: R, f: F) -> Self {
         Self {
             lines: reader.lines().peekable(),
             is_data_label: f,
@@ -107,9 +120,10 @@ where
     }
 }
 
-impl<F> Iterator for Bunches<F>
+impl<F, R> Iterator for Bunches<F, R>
 where
     F: Fn(&str) -> bool,
+    R: BufRead,
 {
     type Item = Vec<String>;
 
