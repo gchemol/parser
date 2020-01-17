@@ -1,8 +1,10 @@
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
-use guts::prelude::*;
 use guts::fs::*;
+use guts::prelude::*;
+
+use std::io::prelude::*;
 // imports:1 ends here
 
 // reader
@@ -33,7 +35,40 @@ impl<R: Read> TextReader<BufReader<R>> {
     }
 }
 
-impl<R: BufRead> TextReader<R> {
+impl<R: BufRead + Seek> TextReader<R> {
+    /// Skip reading until finding a matched line. Return the position before
+    /// the matched line.
+    pub fn skip_until<F>(&mut self, f: F) -> Result<u64>
+    where
+        F: Fn(&str) -> bool,
+    {
+        use std::string::ToString;
+
+        let mut line = String::new();
+        let mut m = 0u64;
+        loop {
+            let n = self.reader.read_line(&mut line)?;
+            // EOF
+            if n == 0 {
+                break;
+            } else {
+                // reverse the reading of the line
+                if f(&line) {
+                    // self.reader.seek(std::io::SeekFrom::Start(0));
+                    // let mut s = vec![0; m];
+                    // self.reader.read_exact(&mut s)?;
+                    // return Ok(String::from_utf8(s).unwrap());
+                    self.reader.seek(std::io::SeekFrom::Start(m));
+                    return Ok(m);
+                }
+            }
+            m += n as u64;
+            line.clear();
+        }
+
+        Ok(m)
+    }
+
     /// Returns an iterator over `n` lines at a time.
     pub fn chunks(self, nlines: usize) -> impl Iterator<Item = String> {
         read_chunk(self.reader, nlines)
@@ -190,6 +225,13 @@ fn test_parser() -> Result<()> {
     let reader = TextReader::from_path(f)?;
     let line = reader.lines().skip(1).next().unwrap();
     assert_eq!(line, " Configuration number :        7");
+
+    // test skip
+    let f = "./tests/files/ch3f.mol2";
+    let mut reader = TextReader::from_path(f)?;
+    reader.skip_until(|line| line.starts_with("@<TRIPOS>"));
+    let line = reader.lines().next().expect("ch3f test");
+    assert_eq!(line, "@<TRIPOS>MOLECULE");
 
     Ok(())
 }
