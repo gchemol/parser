@@ -7,7 +7,6 @@ pub use crate::core::*;
 /// Read the remaining line. Return a line including eol
 pub fn read_line(s: &str) -> IResult<&str, &str> {
     use nom::combinator::recognize;
-    use nom::sequence::pair;
 
     recognize(pair(take_until("\n"), tag("\n")))(s)
 }
@@ -41,8 +40,6 @@ pub fn eol(s: &str) -> IResult<&str, &str> {
 
 /// Anything except whitespace, this parser will not consume "\n" character
 pub fn not_space(s: &str) -> IResult<&str, &str> {
-    use nom::bytes::complete::is_not;
-
     is_not(" \t\r\n")(s)
 }
 
@@ -92,8 +89,6 @@ fn test_numbers() {
 
 /// Consume three float numbers separated by one or more spaces. Return xyz array.
 pub fn xyz_array(s: &str) -> IResult<&str, [f64; 3]> {
-    use nom::sequence::tuple;
-
     let (r, (x, _, y, _, z)) = tuple((double, space1, double, space1, double))(s)?;
 
     Ok((r, [x, y, z]))
@@ -101,8 +96,6 @@ pub fn xyz_array(s: &str) -> IResult<&str, [f64; 3]> {
 
 /// Take and consuming to `token`.
 pub fn jump_to<'a>(token: &'a str) -> impl Fn(&'a str) -> IResult<&str, ()> {
-    use nom::sequence::pair;
-
     map(pair(take_until(token), tag(token)), |_| ())
 }
 
