@@ -82,6 +82,12 @@ impl<R: BufRead + Seek> TextReader<R> {
             .lines()
             .filter_map(|s| if let Ok(line) = s { Some(line) } else { None })
     }
+
+    /// Read all text into string `buf`.
+    pub fn read_to_string(&mut self, buf: &mut String) -> Result<usize> {
+        let n = self.reader.read_to_string(buf)?;
+        Ok(n)
+    }
 }
 
 fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
