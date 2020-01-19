@@ -69,11 +69,6 @@ impl<R: BufRead + Seek> TextReader<R> {
         Ok(m)
     }
 
-    /// Returns an iterator over `n` lines at a time.
-    pub fn chunks(self, nlines: usize) -> impl Iterator<Item = String> {
-        read_chunk(self.reader, nlines)
-    }
-
     /// Returns an iterator over the lines of this reader. Each string returned
     /// will not have a line ending.
     pub fn lines(self) -> impl Iterator<Item = String> {
@@ -97,34 +92,51 @@ fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
     let reader = BufReader::new(f);
     Ok(reader)
 }
+// reader:1 ends here
 
-/// Return an iterator over every n lines from `r`
-fn read_chunk<R: Read>(r: R, nlines: usize) -> impl Iterator<Item = String> {
-    let mut reader = BufReader::new(r);
+// chunks
+// Read text in chunk of every n lines.
 
-    std::iter::from_fn(move || {
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*chunks][chunks:1]]
+pub struct Chunks<B> {
+    buf: B,
+    nlines: usize,
+}
+
+impl<B: BufRead> Iterator for Chunks<B> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
         let mut chunk = String::new();
-        for _ in 0..nlines {
-            match reader.read_line(&mut chunk) {
-                Ok(n) if n == 0 => {
-                    break;
-                }
+        for _ in 0..self.nlines {
+            match self.buf.read_line(&mut chunk) {
+                // EOF
+                Ok(0) => break,
                 Err(e) => {
-                    eprintln!("Failed to read line: {:?}", e);
-                    return None;
+                    // ignore utf-8 errors
+                    error!("Failed to read line: {:?}", e);
                 }
-                Ok(_) => {}
+                Ok(_n) => {}
             }
         }
-
         if chunk.is_empty() {
             None
         } else {
             Some(chunk)
         }
-    })
+    }
 }
-// reader:1 ends here
+
+impl<R: BufRead> TextReader<R> {
+    /// Returns an iterator over `n` lines at a time.
+    pub fn chunks(self, nlines: usize) -> Chunks<R> {
+        Chunks {
+            buf: self.reader,
+            nlines,
+        }
+    }
+}
+// chunks:1 ends here
 
 // bunches
 
@@ -223,9 +235,13 @@ fn test_parser() -> Result<()> {
 
     // test chunks
     let reader = TextReader::from_path(f)?;
-    for chunk in reader.chunks(5) {
-        // dbg!(chunk.lines().count());
-    }
+    assert_eq!(reader.chunks(1).count(), 99);
+    let reader = TextReader::from_path(f)?;
+    let chunks = reader.chunks(5);
+    let nn: Vec<_> = chunks.map(|x| x.lines().count()).collect();
+    assert_eq!(nn.len(), 20);
+    assert_eq!(nn[0], 5);
+    assert_eq!(nn[19], 4);
 
     // test lines
     let reader = TextReader::from_path(f)?;
