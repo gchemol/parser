@@ -94,31 +94,45 @@ fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
 }
 // reader:1 ends here
 
-// chunks
-// Read text in chunk of every n lines.
+// impl
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*chunks][chunks:1]]
-pub struct Chunks<B> {
-    buf: B,
-    nlines: usize,
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*impl][impl:1]]
+/// An iterator over partitioned lines of an instance of BufRead.
+///
+/// see also: TextReader.partitions method.
+pub struct Partitions<R, P> {
+    buf: R,
+    partition: P,
 }
 
-impl<B: BufRead> Iterator for Chunks<B> {
+impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut chunk = String::new();
-        for _ in 0..self.nlines {
+        let mut nlist = vec![];
+        loop {
             match self.buf.read_line(&mut chunk) {
-                // EOF
-                Ok(0) => break,
-                Err(e) => {
-                    // ignore utf-8 errors
-                    error!("Failed to read line: {:?}", e);
+                Ok(0) => break, // EOF
+                Ok(n) => {
+                    nlist.push(n);
+                    let context = ReadContext {
+                        buf: &chunk,
+                        nlist: &nlist,
+                    };
+                    if !self.partition.read_next(context) {
+                        return Some(chunk);
+                    }
                 }
-                Ok(_n) => {}
+                Err(e) => {
+                    // discard any read in buf
+                    error!("Read line failure: {:?}", e);
+                    error!("current buf: {:?}", chunk);
+                    return None;
+                }
             }
         }
+        // process final iteration
         if chunk.is_empty() {
             None
         } else {
@@ -127,13 +141,105 @@ impl<B: BufRead> Iterator for Chunks<B> {
     }
 }
 
+/// A helper struct for handling buffered text.
+pub struct ReadContext<'a> {
+    buf: &'a str,
+    nlist: &'a [usize],
+}
+
+impl<'a> ReadContext<'a> {
+    /// Return the number of lines that alredy read in.
+    #[inline]
+    pub fn nlines(&self) -> usize {
+        self.nlist.len()
+    }
+
+    /// Return the text that already read in.
+    pub fn text(&self) -> &str {
+        &self.buf
+    }
+
+    /// Return current line.
+    pub fn this_line(&self) -> &str {
+        let n = self.nlines();
+        assert!(n > 0);
+        let n = self.nlist[n - 1];
+        let m = self.buf.len() - n;
+        &self.buf[m..]
+    }
+
+    pub fn next_line(&self) -> Option<&str> {
+        todo!()
+    }
+
+    pub fn prev_line(&self) -> &str {
+        todo!()
+    }
+}
+
+/// Read next line or not
+pub trait Partition {
+    /// Instruct the reader to read in the next line or not.
+    ///
+    /// Always read in next line by default.
+    fn read_next(&self, context: ReadContext) -> bool {
+        true
+    }
+}
+
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over `n` lines at a time.
-    pub fn chunks(self, nlines: usize) -> Chunks<R> {
-        Chunks {
+    pub fn partitions<P: Partition>(self, p: P) -> Partitions<R, P> {
+        Partitions {
             buf: self.reader,
-            nlines,
+            partition: p,
         }
+    }
+}
+// impl:1 ends here
+
+// test
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
+#[test]
+fn test_partition() -> Result<()> {
+    // test partitions
+    let f = "./tests/files/ch3f.mol2";
+    let mut reader = TextReader::from_path(f)?;
+    for p in reader.partitions(TestPart) {
+        dbg!(p);
+    }
+
+    Ok(())
+}
+
+struct TestPart;
+
+impl Partition for TestPart {
+    fn read_next(&self, context: ReadContext) -> bool {
+        !context.this_line().starts_with("@<TRIPOS>")
+    }
+}
+// test:1 ends here
+
+// chunks
+// Read text in chunk of every n lines.
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*chunks][chunks:1]]
+// read in nlines as a partition
+pub struct NLines(usize);
+
+impl Partition for NLines {
+    #[inline]
+    fn read_next(&self, context: ReadContext) -> bool {
+        context.nlines() < self.0
+    }
+}
+
+impl<R: BufRead> TextReader<R> {
+    /// Returns an iterator over `n` lines at a time.
+    pub fn chunks(self, n: usize) -> Partitions<R, NLines> {
+        self.partitions(NLines(n))
     }
 }
 // chunks:1 ends here
@@ -141,6 +247,7 @@ impl<R: BufRead> TextReader<R> {
 // bunches
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*bunches][bunches:1]]
+#[deprecated(note = "Plan to be removed")]
 impl<R: BufRead> TextReader<R> {
     /// Return an iterator over a bunch of lines preceded by a label line.
     pub fn bunches<F>(self, label_fn: F) -> Bunches<F, R>
