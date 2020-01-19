@@ -42,8 +42,6 @@ impl<R: BufRead + Seek> TextReader<R> {
     where
         F: Fn(&str) -> bool,
     {
-        use std::string::ToString;
-
         let mut line = String::new();
         let mut m = 0u64;
         loop {
@@ -94,15 +92,26 @@ fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
 }
 // reader:1 ends here
 
-// impl
+// impl/peeking
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*impl][impl:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*impl/peeking][impl/peeking:1]]
 /// An iterator over partitioned lines of an instance of BufRead.
 ///
 /// see also: TextReader.partitions method.
 pub struct Partitions<R, P> {
     buf: R,
     partition: P,
+    peeked: Option<(String, usize)>,
+}
+
+impl<R, P> Partitions<R, P> {
+    fn new(buf: R, partition: P) -> Self {
+        Self {
+            buf,
+            partition,
+            peeked: None,
+        }
+    }
 }
 
 impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
@@ -112,16 +121,34 @@ impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
         let mut chunk = String::new();
         let mut nlist = vec![];
         loop {
-            match self.buf.read_line(&mut chunk) {
-                Ok(0) => break, // EOF
-                Ok(n) => {
-                    nlist.push(n);
-                    let context = ReadContext {
-                        buf: &chunk,
-                        nlist: &nlist,
-                    };
-                    if !self.partition.read_next(context) {
+            let mut next_line = String::new();
+            match self.buf.read_line(&mut next_line) {
+                Ok(0) => {
+                    if let Some((peeked_line, _peeked_n)) = &self.peeked {
+                        chunk += peeked_line;
+                        self.peeked = None;
                         return Some(chunk);
+                    }
+                    break;
+                }
+                Ok(n) => {
+                    // not the first line
+                    if let Some((peeked_line, peeked_n)) = &self.peeked {
+                        chunk += peeked_line;
+                        nlist.push(*peeked_n);
+                        let context = ReadContext {
+                            buf: &chunk,
+                            nlist: &nlist,
+                            peeked_line: &next_line,
+                        };
+
+                        self.peeked = Some((next_line.clone(), n));
+                        if !self.partition.read_next(context) {
+                            return Some(chunk);
+                        }
+                    } else {
+                        // update peeked value
+                        self.peeked = Some((next_line, n));
                     }
                 }
                 Err(e) => {
@@ -133,11 +160,7 @@ impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
             }
         }
         // process final iteration
-        if chunk.is_empty() {
-            None
-        } else {
-            Some(chunk)
-        }
+        None
     }
 }
 
@@ -145,6 +168,7 @@ impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
 pub struct ReadContext<'a> {
     buf: &'a str,
     nlist: &'a [usize],
+    peeked_line: &'a str,
 }
 
 impl<'a> ReadContext<'a> {
@@ -168,8 +192,9 @@ impl<'a> ReadContext<'a> {
         &self.buf[m..]
     }
 
-    pub fn next_line(&self) -> Option<&str> {
-        todo!()
+    /// Return peeked next line.
+    pub fn next_line(&self) -> &str {
+        self.peeked_line
     }
 
     pub fn prev_line(&self) -> &str {
@@ -182,6 +207,7 @@ pub trait Partition {
     /// Instruct the reader to read in the next line or not.
     ///
     /// Always read in next line by default.
+    #[inline]
     fn read_next(&self, context: ReadContext) -> bool {
         true
     }
@@ -190,37 +216,10 @@ pub trait Partition {
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over `n` lines at a time.
     pub fn partitions<P: Partition>(self, p: P) -> Partitions<R, P> {
-        Partitions {
-            buf: self.reader,
-            partition: p,
-        }
+        Partitions::new(self.reader, p)
     }
 }
-// impl:1 ends here
-
-// test
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
-#[test]
-fn test_partition() -> Result<()> {
-    // test partitions
-    let f = "./tests/files/ch3f.mol2";
-    let mut reader = TextReader::from_path(f)?;
-    for p in reader.partitions(TestPart) {
-        dbg!(p);
-    }
-
-    Ok(())
-}
-
-struct TestPart;
-
-impl Partition for TestPart {
-    fn read_next(&self, context: ReadContext) -> bool {
-        !context.this_line().starts_with("@<TRIPOS>")
-    }
-}
-// test:1 ends here
+// impl/peeking:1 ends here
 
 // chunks
 // Read text in chunk of every n lines.
@@ -230,7 +229,6 @@ impl Partition for TestPart {
 pub struct NLines(usize);
 
 impl Partition for NLines {
-    #[inline]
     fn read_next(&self, context: ReadContext) -> bool {
         context.nlines() < self.0
     }
@@ -244,9 +242,73 @@ impl<R: BufRead> TextReader<R> {
 }
 // chunks:1 ends here
 
-// bunches
+// terminated with
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*bunches][bunches:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*terminated with][terminated with:1]]
+// Terminated with
+pub struct Terminated<F>
+where
+    F: Fn(&str) -> bool,
+{
+    f: F,
+}
+
+impl<F> Partition for Terminated<F>
+where
+    F: Fn(&str) -> bool,
+{
+    #[inline]
+    fn read_next(&self, context: ReadContext) -> bool {
+        !(self.f)(context.this_line())
+    }
+}
+
+impl<R: BufRead> TextReader<R> {
+    /// Returns an iterator over `n` lines at a time.
+    pub fn terminated_bunches<F>(self, f: F) -> Partitions<R, Terminated<F>>
+    where
+        F: Fn(&str) -> bool,
+    {
+        self.partitions(Terminated { f })
+    }
+}
+// terminated with:1 ends here
+
+// preceded with
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*preceded with][preceded with:1]]
+// Preceded with
+pub struct Preceded<F>
+where
+    F: Fn(&str) -> bool,
+{
+    f: F,
+}
+
+impl<F> Partition for Preceded<F>
+where
+    F: Fn(&str) -> bool,
+{
+    #[inline]
+    fn read_next(&self, context: ReadContext) -> bool {
+        !(self.f)(context.next_line())
+    }
+}
+
+impl<R: BufRead> TextReader<R> {
+    /// Returns an iterator over `n` lines at a time.
+    pub fn preceded_bunches<F>(self, f: F) -> Partitions<R, Preceded<F>>
+    where
+        F: Fn(&str) -> bool,
+    {
+        self.partitions(Preceded { f })
+    }
+}
+// preceded with:1 ends here
+
+// impl
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*impl][impl:1]]
 #[deprecated(note = "Plan to be removed")]
 impl<R: BufRead> TextReader<R> {
     /// Return an iterator over a bunch of lines preceded by a label line.
@@ -322,7 +384,7 @@ where
         None
     }
 }
-// bunches:1 ends here
+// impl:1 ends here
 
 // test
 
@@ -331,13 +393,13 @@ where
 fn test_parser() -> Result<()> {
     let f = "./tests/files/lammps-test.dump";
     let reader = TextReader::from_path(f)?;
-    let bunches = reader.bunches(|line| line.starts_with("ITEM: TIMESTEP"));
+    let bunches = reader.preceded_bunches(|line| line.starts_with("ITEM: TIMESTEP"));
     assert_eq!(bunches.count(), 3);
 
     let f = "./tests/files/multi.xyz";
     let if_data_label = |line: &str| line.trim().parse::<usize>().is_ok();
     let reader = TextReader::from_path(f)?;
-    let bunches = reader.bunches(if_data_label);
+    let bunches = reader.preceded_bunches(if_data_label);
     assert_eq!(bunches.count(), 6);
 
     // test chunks

@@ -64,6 +64,7 @@ fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
     let read_atoms = many1(read_atom_xyz);
     do_parse!(
         s,
+        read_usize >>            // natoms
         read_line >>             // ignore title
         atoms: read_atoms >>     // many atoms
         (atoms)
@@ -72,7 +73,8 @@ fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
 
 #[test]
 fn test_parser_read_xyz() {
-    let txt = " Configuration number :        7
+    let txt = " 16
+   Configuration number :        7
    N   1.38635  -0.29197   0.01352
    N  -1.38633   0.29227   0.00681
    C   0.91882   0.97077  -0.01878
@@ -99,9 +101,8 @@ fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
     let reader = TextReader::from_path(fname)?;
     let parts: Vec<_> = reader
-        .bunches(|line| line.trim().parse::<usize>().is_ok())
-        .map(|bunch| {
-            let s = bunch.into_iter().skip(1).join("\n");
+        .preceded_bunches(|line| line.trim().parse::<usize>().is_ok())
+        .map(|s| {
             let (_, atoms) = read_xyz_stream(&s).unwrap();
             atoms
         })
