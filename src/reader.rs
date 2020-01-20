@@ -47,7 +47,7 @@ impl<R: Read> TextReader<BufReader<R>> {
 impl<R: BufRead + Seek> TextReader<R> {
     /// Skip reading until finding a matched line. Return the position before
     /// the matched line.
-    pub fn skip_until<F>(&mut self, f: F) -> Result<u64>
+    pub fn seek_line<F>(&mut self, f: F) -> Result<u64>
     where
         F: Fn(&str) -> bool,
     {
@@ -74,6 +74,14 @@ impl<R: BufRead + Seek> TextReader<R> {
         }
 
         Ok(m)
+    }
+
+    #[deprecated(note = "Use seek_line method instead.")]
+    pub fn skip_until<F>(&mut self, f: F) -> Result<u64>
+    where
+        F: Fn(&str) -> bool,
+    {
+        self.seek_line(f)
     }
 
     /// Returns an iterator over the lines of this reader. Each string returned
@@ -399,7 +407,7 @@ where
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
 #[test]
-fn test_parser() -> Result<()> {
+fn test_reader() -> Result<()> {
     let f = "./tests/files/lammps-test.dump";
     let reader = TextReader::from_path(f)?;
     let bunches = reader.preceded_bunches(|line| line.starts_with("ITEM: TIMESTEP"));
@@ -426,12 +434,18 @@ fn test_parser() -> Result<()> {
     let line = reader.lines().skip(1).next().unwrap();
     assert_eq!(line, " Configuration number :        7");
 
-    // test skip
+    // test seeking
     let f = "./tests/files/ch3f.mol2";
     let mut reader = TextReader::from_path(f)?;
-    reader.skip_until(|line| line.starts_with("@<TRIPOS>"));
+    let _ = reader.seek_line(|line| line.starts_with("@<TRIPOS>"))?;
     let line = reader.lines().next().expect("ch3f test");
     assert_eq!(line, "@<TRIPOS>MOLECULE");
+
+    // test from_str
+    let s = "abc\nabcd\r\nabcde\n";
+    let reader = TextReader::from_str(s);
+    let line = reader.lines().next().unwrap();
+    assert_eq!(line, "abc");
 
     Ok(())
 }
