@@ -15,14 +15,14 @@ type FileReader = BufReader<File>;
 
 #[derive(Debug)]
 pub struct TextReader<R: BufRead> {
-    reader: R,
+    inner: R,
 }
 
 impl TextReader<FileReader> {
     /// Build a text reader for file from path `p`.
     pub fn from_path<P: AsRef<Path>>(p: P) -> Result<Self> {
         let reader = text_file_reader(p)?;
-        let parser = Self { reader };
+        let parser = Self { inner: reader };
         Ok(parser)
     }
 }
@@ -31,7 +31,7 @@ impl<'a> TextReader<Cursor<&'a str>> {
     /// Build a text reader for string slice.
     pub fn from_str(s: &'a str) -> Self {
         let r = Cursor::new(s);
-        TextReader { reader: r }
+        TextReader { inner: r }
     }
 }
 
@@ -39,7 +39,7 @@ impl<R: Read> TextReader<BufReader<R>> {
     /// Build a text reader from a struct implementing Read trait.
     pub fn new(r: R) -> Self {
         Self {
-            reader: BufReader::new(r),
+            inner: BufReader::new(r),
         }
     }
 }
@@ -54,9 +54,9 @@ impl<R: BufRead + Seek> TextReader<R> {
         let mut line = String::new();
         let mut m = 0u64;
         loop {
-            let n = self.reader.read_line(&mut line)?;
-            // EOF
+            let n = self.inner.read_line(&mut line)?;
             if n == 0 {
+                // EOF
                 break;
             } else {
                 // reverse the reading of the line
@@ -65,7 +65,7 @@ impl<R: BufRead + Seek> TextReader<R> {
                     // let mut s = vec![0; m];
                     // self.reader.read_exact(&mut s)?;
                     // return Ok(String::from_utf8(s).unwrap());
-                    let _ = self.reader.seek(std::io::SeekFrom::Start(m))?;
+                    let _ = self.inner.seek(std::io::SeekFrom::Start(m))?;
                     return Ok(m);
                 }
             }
@@ -82,7 +82,7 @@ impl<R: BufRead> TextReader<R> {
     /// line ending.
     pub fn read_line(&mut self, buf: &mut String) -> Option<usize> {
         let mut line = String::new();
-        match self.reader.read_line(&mut line) {
+        match self.inner.read_line(&mut line) {
             Ok(0) => {
                 return None;
             }
@@ -109,14 +109,14 @@ impl<R: BufRead> TextReader<R> {
     /// will not have a line ending.
     pub fn lines(self) -> impl Iterator<Item = String> {
         // silently ignore UTF-8 error
-        self.reader
+        self.inner
             .lines()
             .filter_map(|s| if let Ok(line) = s { Some(line) } else { None })
     }
 
     /// Read all text into string `buf`.
     pub fn read_to_string(&mut self, buf: &mut String) -> Result<usize> {
-        let n = self.reader.read_to_string(buf)?;
+        let n = self.inner.read_to_string(buf)?;
         Ok(n)
     }
 }
@@ -344,7 +344,7 @@ impl<R: BufRead> TextReader<R> {
     where
         F: Fn(&str) -> bool,
     {
-        Bunches::new(self.reader, label_fn)
+        Bunches::new(self.inner, label_fn)
     }
 }
 
