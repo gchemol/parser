@@ -5,6 +5,7 @@ use guts::fs::*;
 use guts::prelude::*;
 
 use std::io::prelude::*;
+use std::io::Cursor;
 // imports:1 ends here
 
 // reader
@@ -23,6 +24,14 @@ impl TextReader<FileReader> {
         let reader = text_file_reader(p)?;
         let parser = Self { reader };
         Ok(parser)
+    }
+}
+
+impl<'a> TextReader<Cursor<&'a str>> {
+    /// Build a text reader for string slice.
+    pub fn from_str(s: &'a str) -> Self {
+        let r = Cursor::new(s);
+        TextReader { reader: r }
     }
 }
 
@@ -56,7 +65,7 @@ impl<R: BufRead + Seek> TextReader<R> {
                     // let mut s = vec![0; m];
                     // self.reader.read_exact(&mut s)?;
                     // return Ok(String::from_utf8(s).unwrap());
-                    self.reader.seek(std::io::SeekFrom::Start(m));
+                    let _ = self.reader.seek(std::io::SeekFrom::Start(m))?;
                     return Ok(m);
                 }
             }
@@ -208,7 +217,7 @@ pub trait Partition {
     ///
     /// Always read in next line by default.
     #[inline]
-    fn read_next(&self, context: ReadContext) -> bool {
+    fn read_next(&self, _context: ReadContext) -> bool {
         true
     }
 }
