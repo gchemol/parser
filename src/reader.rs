@@ -13,6 +13,14 @@ use std::io::Cursor;
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*reader][reader:1]]
 type FileReader = BufReader<File>;
 
+fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
+    let p = p.as_ref();
+    let f = File::open(p).with_context(|| format!("Failed to open file {:?}", p))?;
+
+    let reader = BufReader::new(f);
+    Ok(reader)
+}
+
 #[derive(Debug)]
 pub struct TextReader<R: BufRead> {
     inner: R,
@@ -78,28 +86,25 @@ impl<R: BufRead + Seek> TextReader<R> {
 }
 
 impl<R: BufRead> TextReader<R> {
-    /// Read a new line into buf. Note: the new line is forced to use unix style
-    /// line ending.
+    /// Read a new line into buf. Return the length of the new line. Note: the
+    /// new line is forced to use unix style line ending.
     pub fn read_line(&mut self, buf: &mut String) -> Option<usize> {
-        let mut line = String::new();
-        match self.inner.read_line(&mut line) {
+        match self.inner.read_line(buf) {
             Ok(0) => {
                 return None;
             }
             Err(e) => {
                 // discard any read in buf
                 error!("Read line failure: {:?}", e);
-                error!("current line: {:?}", line);
                 return None;
             }
             Ok(mut n) => {
-                // fix DOS line ending
-                if line.ends_with("\r\n") {
-                    let i = line.len() - 2;
-                    line.remove(i);
+                // force to use Unix line ending
+                if buf.ends_with("\r\n") {
+                    let i = buf.len() - 2;
+                    buf.remove(i);
                     n -= 1;
                 }
-                *buf += &line;
                 return Some(n);
             }
         }
@@ -119,14 +124,6 @@ impl<R: BufRead> TextReader<R> {
         let n = self.inner.read_to_string(buf)?;
         Ok(n)
     }
-}
-
-fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
-    let p = p.as_ref();
-    let f = File::open(p).with_context(|| format!("Failed to open file {:?}", p))?;
-
-    let reader = BufReader::new(f);
-    Ok(reader)
 }
 // reader:1 ends here
 
@@ -253,19 +250,33 @@ impl<R: BufRead> TextReader<R> {
 // Read text in chunk of every n lines.
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*chunks][chunks:1]]
-// read in nlines as a partition
-pub struct NLines(usize);
+pub struct Chunks<R: BufRead> {
+    reader: TextReader<R>,
+    nlines: usize,
+}
 
-impl Partition for NLines {
-    fn read_next(&self, context: ReadContext) -> bool {
-        context.nlines() < self.0
+impl<R: BufRead> Iterator for Chunks<R> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut chunk = String::new();
+        for _ in 0..self.nlines {
+            if self.reader.read_line(&mut chunk).is_none() {
+                break;
+            }
+        }
+        if chunk.is_empty() {
+            None
+        } else {
+            Some(chunk)
+        }
     }
 }
 
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over `n` lines at a time.
-    pub fn chunks(self, n: usize) -> Partitions<R, NLines> {
-        self.partitions(NLines(n))
+    pub fn chunks(self, nlines: usize) -> Chunks<R> {
+        Chunks { reader: self, nlines }
     }
 }
 // chunks:1 ends here
