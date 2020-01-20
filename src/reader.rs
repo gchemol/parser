@@ -75,6 +75,35 @@ impl<R: BufRead + Seek> TextReader<R> {
 
         Ok(m)
     }
+}
+
+impl<R: BufRead> TextReader<R> {
+    /// Read a new line into buf. Note: the new line is forced to use unix style
+    /// line ending.
+    pub fn read_line(&mut self, buf: &mut String) -> Option<usize> {
+        let mut line = String::new();
+        match self.reader.read_line(&mut line) {
+            Ok(0) => {
+                return None;
+            }
+            Err(e) => {
+                // discard any read in buf
+                error!("Read line failure: {:?}", e);
+                error!("current line: {:?}", line);
+                return None;
+            }
+            Ok(mut n) => {
+                // fix DOS line ending
+                if line.ends_with("\r\n") {
+                    let i = line.len() - 2;
+                    line.remove(i);
+                    n -= 1;
+                }
+                *buf += &line;
+                return Some(n);
+            }
+        }
+    }
 
     /// Returns an iterator over the lines of this reader. Each string returned
     /// will not have a line ending.
@@ -107,16 +136,16 @@ fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
 /// An iterator over partitioned lines of an instance of BufRead.
 ///
 /// see also: TextReader.partitions method.
-pub struct Partitions<R, P> {
-    buf: R,
+pub struct Partitions<R: BufRead, P> {
+    reader: TextReader<R>,
     partition: P,
     peeked: Option<(String, usize)>,
 }
 
-impl<R, P> Partitions<R, P> {
-    fn new(buf: R, partition: P) -> Self {
+impl<R: BufRead, P> Partitions<R, P> {
+    fn new(reader: TextReader<R>, partition: P) -> Self {
         Self {
-            buf,
+            reader,
             partition,
             peeked: None,
         }
@@ -131,8 +160,8 @@ impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
         let mut nlist = vec![];
         loop {
             let mut next_line = String::new();
-            match self.buf.read_line(&mut next_line) {
-                Ok(0) => {
+            match self.reader.read_line(&mut next_line) {
+                None => {
                     if let Some((peeked_line, _peeked_n)) = &self.peeked {
                         chunk += peeked_line;
                         self.peeked = None;
@@ -140,14 +169,8 @@ impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
                     }
                     break;
                 }
-                Ok(mut n) => {
-                    // fix DOS line ending
-                    if next_line.ends_with("\r\n") {
-                        let i = next_line.len() - 2;
-                        next_line.remove(i);
-                        n -= 1;
-                    }
-                    // not the first line
+                Some(n) => {
+                    // when not reading the first line
                     if let Some((peeked_line, peeked_n)) = &self.peeked {
                         chunk += peeked_line;
                         nlist.push(*peeked_n);
@@ -165,12 +188,6 @@ impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
                         // update peeked value
                         self.peeked = Some((next_line, n));
                     }
-                }
-                Err(e) => {
-                    // discard any read in buf
-                    error!("Read line failure: {:?}", e);
-                    error!("current buf: {:?}", chunk);
-                    return None;
                 }
             }
         }
@@ -211,10 +228,6 @@ impl<'a> ReadContext<'a> {
     pub fn next_line(&self) -> &str {
         self.peeked_line
     }
-
-    pub fn prev_line(&self) -> &str {
-        todo!()
-    }
 }
 
 /// Read next line or not
@@ -231,7 +244,7 @@ pub trait Partition {
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over `n` lines at a time.
     pub fn partitions<P: Partition>(self, p: P) -> Partitions<R, P> {
-        Partitions::new(self.reader, p)
+        Partitions::new(self, p)
     }
 }
 // impl/peeking:1 ends here
