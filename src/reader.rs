@@ -76,14 +76,6 @@ impl<R: BufRead + Seek> TextReader<R> {
         Ok(m)
     }
 
-    #[deprecated(note = "Use seek_line method instead.")]
-    pub fn skip_until<F>(&mut self, f: F) -> Result<u64>
-    where
-        F: Fn(&str) -> bool,
-    {
-        self.seek_line(f)
-    }
-
     /// Returns an iterator over the lines of this reader. Each string returned
     /// will not have a line ending.
     pub fn lines(self) -> impl Iterator<Item = String> {
