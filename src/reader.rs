@@ -148,7 +148,13 @@ impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
                     }
                     break;
                 }
-                Ok(n) => {
+                Ok(mut n) => {
+                    // fix DOS line ending
+                    if next_line.ends_with("\r\n") {
+                        let i = next_line.len() - 2;
+                        next_line.remove(i);
+                        n -= 1;
+                    }
                     // not the first line
                     if let Some((peeked_line, peeked_n)) = &self.peeked {
                         chunk += peeked_line;
