@@ -25,9 +25,8 @@ pub use nom::multi::{separated_list, separated_nonempty_list};
 pub use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 
 // combinator
-pub use nom::combinator::not;
-pub use nom::combinator::opt;
 pub use nom::combinator::{map, map_opt, map_res};
+pub use nom::combinator::{not, opt, peek};
 // base:1 ends here
 
 // complete or streaming
