@@ -239,8 +239,14 @@ pub trait Partition {
 }
 
 impl<R: BufRead> TextReader<R> {
+    #[deprecated(note = "Use partition_by instead")]
     /// Returns an iterator over `n` lines at a time.
     pub fn partitions<P: Partition>(self, p: P) -> Partitions<R, P> {
+        Partitions::new(self, p)
+    }
+
+    /// Returns an iterator over `n` lines at a time.
+    pub fn partition_by<P: Partition>(self, p: P) -> Partitions<R, P> {
         Partitions::new(self, p)
     }
 }
@@ -308,7 +314,7 @@ impl<R: BufRead> TextReader<R> {
     where
         F: Fn(&str) -> bool,
     {
-        self.partitions(Terminated { f })
+        self.partition_by(Terminated { f })
     }
 }
 // terminated with:1 ends here
@@ -340,7 +346,7 @@ impl<R: BufRead> TextReader<R> {
     where
         F: Fn(&str) -> bool,
     {
-        self.partitions(Preceded { f })
+        self.partition_by(Preceded { f })
     }
 }
 // preceded with:1 ends here
