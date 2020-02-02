@@ -8,7 +8,7 @@ edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
-guts = { git = "https://github.com/ybyygu/guts.git", branch="dev" }
+guts = { git = "https://github.com/ybyygu/guts.git" }
 #guts = { path = "../../guts" }
 nom = "5"
 

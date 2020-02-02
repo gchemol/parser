@@ -132,7 +132,7 @@ impl<R: BufRead> TextReader<R> {
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*impl/peeking][impl/peeking:1]]
 /// An iterator over partitioned lines of an instance of BufRead.
 ///
-/// see also: TextReader.partitions method.
+/// see also: TextReader.partition_by method.
 pub struct Partitions<R: BufRead, P> {
     reader: TextReader<R>,
     partition: P,
@@ -251,6 +251,43 @@ impl<R: BufRead> TextReader<R> {
     }
 }
 // impl/peeking:1 ends here
+
+// test
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
+#[test]
+fn test_partition() -> Result<()> {
+    // test partitions
+    let f = "./tests/files/Test.FChk";
+    let mut reader = TextReader::from_path(f)?;
+    let parts = reader.partition_by(ChkFile);
+    assert_eq!(parts.count(), 71);
+
+    // check string
+    let s = guts::fs::read_file(f)?;
+    let f = "./tests/files/multi.pxyz";
+    let reader = TextReader::from_str(&s);
+    let parts =  reader.partition_by(XyzFile);
+    assert_eq!(parts.count(), 7);
+
+    Ok(())
+}
+
+struct ChkFile;
+impl Partition for ChkFile {
+    fn read_next(&self, context: ReadContext) -> bool {
+        let line = context.next_line();
+        !(line.len() >= 50 && line.chars().next().unwrap().is_uppercase())
+    }
+}
+
+struct XyzFile;
+impl Partition for XyzFile {
+    fn read_next(&self, context: ReadContext) -> bool {
+        !context.this_line().trim().is_empty()
+    }
+}
+// test:1 ends here
 
 // chunks
 // Read text in chunk of every n lines.
