@@ -3,13 +3,13 @@
 # [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*cargo][cargo:1]]
 [package]
 name = "text-parser"
-version = "0.0.5"
+version = "0.0.6"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 
 [dependencies]
-guts = { git = "https://github.com/ybyygu/guts.git" }
-#guts = { path = "../../guts" }
+#guts = { git = "https://github.com/ybyygu/guts.git" }
+guts = { path = "../../guts" }
 nom = "5"
 
 [dev-dependencies]

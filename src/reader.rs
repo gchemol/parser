@@ -239,12 +239,6 @@ pub trait Partition {
 }
 
 impl<R: BufRead> TextReader<R> {
-    #[deprecated(note = "Use partition_by instead")]
-    /// Returns an iterator over `n` lines at a time.
-    pub fn partitions<P: Partition>(self, p: P) -> Partitions<R, P> {
-        Partitions::new(self, p)
-    }
-
     /// Returns an iterator over `n` lines at a time.
     pub fn partition_by<P: Partition>(self, p: P) -> Partitions<R, P> {
         Partitions::new(self, p)
@@ -259,7 +253,7 @@ impl<R: BufRead> TextReader<R> {
 fn test_partition() -> Result<()> {
     // test partitions
     let f = "./tests/files/Test.FChk";
-    let mut reader = TextReader::from_path(f)?;
+    let reader = TextReader::from_path(f)?;
     let parts = reader.partition_by(ChkFile);
     assert_eq!(parts.count(), 71);
 
