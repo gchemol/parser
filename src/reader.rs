@@ -1,10 +1,9 @@
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
-use guts::fs::*;
-use guts::prelude::*;
+use gchemol_gut::fs::*;
+use gchemol_gut::prelude::*;
 
-use std::io::prelude::*;
 use std::io::Cursor;
 // imports:1 ends here
 
@@ -258,7 +257,7 @@ fn test_partition() -> Result<()> {
     assert_eq!(parts.count(), 71);
 
     // check string
-    let s = guts::fs::read_file(f)?;
+    let s = gchemol_gut::fs::read_file(f)?;
     let f = "./tests/files/multi.pxyz";
     let reader = TextReader::from_str(&s);
     let parts =  reader.partition_by(XyzFile);

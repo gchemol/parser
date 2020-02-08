@@ -3,8 +3,8 @@
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
 use std::collections::HashMap;
 
-use guts::prelude::*;
-use text_parser::parsers::*;
+use gchemol_gut::prelude::*;
+use gchemol_parser::parsers::*;
 // imports:1 ends here
 
 // meta
@@ -217,7 +217,7 @@ fn read_lammps_dump(input: &str) -> IResult<&str, HashMap<usize, Atom>> {
 
 #[test]
 fn test_parser() -> Result<()> {
-    use text_parser::TextReader;
+    use gchemol_parser::TextReader;
     let fname = "tests/files/lammps-test.dump";
     let reader = TextReader::from_path(fname)?;
     let frames: Vec<_> = reader

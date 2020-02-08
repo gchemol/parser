@@ -4,9 +4,9 @@
 // :END:
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*xyz.rs][xyz.rs:1]]
-use guts::prelude::*;
-use text_parser::parsers::*;
-use text_parser::TextReader;
+use gchemol_gut::prelude::*;
+use gchemol_parser::parsers::*;
+use gchemol_parser::TextReader;
 
 /// A minimal representation for chemical atom.
 #[derive(Debug)]

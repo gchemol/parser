@@ -2,9 +2,9 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
 use std::fs::File;
-use text_parser::*;
 
-use text_parser::parsers::*;
+use gchemol_parser::*;
+use gchemol_parser::parsers::*;
 // imports:1 ends here
 
 //    2 1 3 1 3 14 0         1.324         1.345         1.300         3.969         0.000         0.193
@@ -101,7 +101,7 @@ fn read_part(s: &str) -> IResult<&str, Vec<(usize, usize, f64)>> {
 // core
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*core][core:1]]
-use guts::fs::*;
+use gchemol_gut::fs::*;
 fn average_bond_orders(fname: &str) -> Result<()> {
     // read the first 8 lines, determine the number of atoms in each frame
     let r = TextReader::from_path(fname)?;
@@ -140,8 +140,8 @@ fn average_bond_orders(fname: &str) -> Result<()> {
 // main
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*main][main:1]]
-use guts::cli::*;
-use guts::prelude::*;
+use gchemol_gut::cli::*;
+use gchemol_gut::prelude::*;
 
 use std::time;
 use structopt::StructOpt;

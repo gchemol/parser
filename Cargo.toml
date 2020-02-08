@@ -2,14 +2,18 @@
 
 # [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*cargo][cargo:1]]
 [package]
-name = "text-parser"
-version = "0.0.6"
+name = "gchemol-parser"
+version = "0.0.7"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
+description = "Text parsing made simple"
+homepage = "https://github.com/gchemol/parser"
+repository = "https://github.com/gchemol/parser"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
-#guts = { git = "https://github.com/ybyygu/guts.git" }
-guts = { path = "../../guts" }
+gchemol-gut = "0.0.7"
 nom = "5"
 
 [dev-dependencies]
