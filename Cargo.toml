@@ -3,7 +3,7 @@
 # [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*cargo][cargo:1]]
 [package]
 name = "gchemol-parser"
-version = "0.0.7"
+version = "0.0.8"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Text parsing made simple"
@@ -13,7 +13,7 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-gchemol-gut = "0.0.7"
+gchemol-gut = "0.0.8"
 nom = "5"
 
 [dev-dependencies]
