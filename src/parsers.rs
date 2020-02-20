@@ -4,11 +4,17 @@
 pub use crate::core::complete::*;
 pub use crate::core::*;
 
-/// Read the remaining line. Return a line including eol
+/// Read a new line including eol (\n) or consume the rest if there is no eol
+/// char.
 pub fn read_line(s: &str) -> IResult<&str, &str> {
     use nom::combinator::recognize;
 
-    recognize(pair(take_until("\n"), tag("\n")))(s)
+    // if there is no newline if `s`, take the whole str
+    let (rest, line_opt) = opt(recognize(pair(take_until("\n"), tag("\n"))))(s)?;
+    match line_opt {
+        None => nom::combinator::rest(rest),
+        Some(line) => Ok((rest, line)),
+    }
 }
 
 #[test]
@@ -20,6 +26,12 @@ fn test_read_line() {
     assert_eq!(line, "second line\r\n");
     let (rest, line) = read_line(rest).unwrap();
     assert_eq!(line, "third line\n");
+    assert_eq!(rest, "");
+
+    // when there is no newline
+    let txt = "no newline at the end";
+    let (rest, line) = read_line(txt).unwrap();
+    assert_eq!(line, txt);
     assert_eq!(rest, "");
 }
 
