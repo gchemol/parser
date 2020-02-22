@@ -1,3 +1,11 @@
+// docs
+// 小的, 基于行的解析元件, 不会返回incomplete error.
+
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*docs][docs:1]]
+//! Selected nom parser combinators (complete version, no streaming)
+// docs:1 ends here
+
 // base
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*base][base:1]]
@@ -9,7 +17,7 @@ pub use crate::core::*;
 pub fn read_line(s: &str) -> IResult<&str, &str> {
     use nom::combinator::recognize;
 
-    // if there is no newline if `s`, take the whole str
+    // if there is no newline in `s`, take the whole str
     let (rest, line_opt) = opt(recognize(pair(take_until("\n"), tag("\n"))))(s)?;
     match line_opt {
         None => nom::combinator::rest(rest),

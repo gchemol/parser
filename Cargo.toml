@@ -14,8 +14,8 @@ license = "MIT OR Apache-2.0"
 exclude = ["bin/*", "docs/*", "ltxpng/*", "data/*"]
 
 [dependencies]
-gchemol-gut = "0.1.1"
 nom = "5.1"
+gut = { version="0.1.1" , package="gchemol-gut" }
 
 [dev-dependencies]
 structopt = "0.3"

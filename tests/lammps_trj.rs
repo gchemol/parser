@@ -3,8 +3,8 @@
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
 use std::collections::HashMap;
 
-use gchemol_gut::prelude::*;
 use gchemol_parser::parsers::*;
+use gut::prelude::*;
 // imports:1 ends here
 
 // meta
