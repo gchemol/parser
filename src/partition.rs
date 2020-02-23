@@ -1,3 +1,9 @@
+// docs
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*docs][docs:1]]
+//! Split large text stream into multiple parts.
+// docs:1 ends here
+
 // imports
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
