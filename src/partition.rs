@@ -15,7 +15,7 @@ use gut::prelude::*;
 
 // read context
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*read context][read context:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*read%20context][read context:1]]
 /// A helper struct for handling buffered text.
 pub struct ReadContext<'a> {
     /// Buffered text.
@@ -75,8 +75,7 @@ pub enum ReadAction {
 pub trait ReadPart {
     /// How to read next lines?
     fn read_next<'a>(&self, context: ReadContext<'a>) -> ReadAction {
-        let n = context.number_of_lines();
-        ReadAction::Done(n)
+        ReadAction::Need(1)
     }
 
     /// Read `n` lines at each time.
@@ -163,7 +162,7 @@ impl<R: BufRead, P: ReadPart> Iterator for Partitions<R, P> {
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over part of text, using a generic text partioner
     /// `p`.
-    pub fn partitions<P>(self, p: P) -> impl Iterator<Item = String>
+    pub fn partitions<P>(self, p: P) -> Partitions<R, P>
     where
         P: ReadPart,
     {
@@ -180,6 +179,15 @@ impl<R: BufRead> TextReader<R> {
 pub struct Chunks(usize);
 
 impl ReadPart for Chunks {
+    fn read_next(&self, context: ReadContext) -> ReadAction {
+        let n = context.number_of_lines();
+        if n == self.0 {
+            ReadAction::Done(n)
+        } else {
+            unreachable!()
+        }
+    }
+
     fn n_stride(&self) -> usize {
         self.0
     }
@@ -205,13 +213,8 @@ impl<R: BufRead> TextReader<R> {
 // : part3> line 8 tail
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*terminated][terminated:1]]
-// Terminated with
-pub struct Terminated<F>
-where
-    F: Fn(&str) -> bool,
-{
-    f: F,
-}
+// Terminated with a tail line
+pub struct Terminated<F>(pub F);
 
 impl<F> ReadPart for Terminated<F>
 where
@@ -221,7 +224,7 @@ where
     fn read_next(&self, context: ReadContext) -> ReadAction {
         let n = context.number_of_lines();
         let last_line = context.line(n);
-        if (self.f)(last_line) {
+        if (self.0)(last_line) {
             ReadAction::Done(n)
         } else {
             ReadAction::Need(1)
@@ -235,7 +238,7 @@ impl<R: BufRead> TextReader<R> {
     where
         F: Fn(&str) -> bool,
     {
-        Partitions::new(self, Terminated { f })
+        Partitions::new(self, Terminated(f))
     }
 }
 
@@ -273,13 +276,10 @@ fn test_terminated() -> Result<()> {
 // : part3> line 8
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*preceded][preceded:1]]
-// Preceded with
-pub struct Preceded<F>
+// Preceded with a head line
+pub struct Preceded<F>(pub F)
 where
-    F: Fn(&str) -> bool,
-{
-    f: F,
-}
+    F: Fn(&str) -> bool;
 
 impl<F> ReadPart for Preceded<F>
 where
@@ -289,7 +289,7 @@ where
     fn read_next(&self, context: ReadContext) -> ReadAction {
         let n = context.number_of_lines();
         // n > 1: need at least two lines to decide
-        if n > 1 && (self.f)(context.line(n)) {
+        if n > 1 && (self.0)(context.line(n)) {
             ReadAction::Done(n - 1)
         } else {
             ReadAction::Need(1)
@@ -303,7 +303,7 @@ impl<R: BufRead> TextReader<R> {
     where
         F: Fn(&str) -> bool,
     {
-        Partitions::new(self, Preceded { f })
+        Partitions::new(self, Preceded(f))
     }
 }
 
@@ -384,6 +384,20 @@ mod test {
         assert_eq!(nn.len(), 20, "chunks");
         assert_eq!(nn[0], 5, "chunks");
         assert_eq!(nn[19], 4, "chunks");
+
+        Ok(())
+    }
+
+    // test default impl
+    #[test]
+    fn test_read_part_default() -> Result<()> {
+        struct OnePart;
+        impl ReadPart for OnePart {}
+
+        let f = "./tests/files/multi.xyz";
+        let reader = TextReader::from_path(f)?;
+        let parts = reader.partitions(OnePart);
+        assert_eq!(parts.count(), 1);
 
         Ok(())
     }
