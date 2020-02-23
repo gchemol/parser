@@ -21,6 +21,7 @@ fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
 }
 
 #[derive(Debug)]
+/// A stream reader for large text file
 pub struct TextReader<R: BufRead> {
     inner: R,
 }
@@ -85,8 +86,12 @@ impl<R: BufRead + Seek> TextReader<R> {
 }
 
 impl<R: BufRead> TextReader<R> {
-    /// Read a new line into buf. Return the length of the new line. Note: the
-    /// new line is forced to use unix style line ending.
+    /// Read a new line into buf. Note: the new line is forced to use unix style
+    /// line ending.
+    ///
+    /// This function will return the total number of bytes read.
+    ///
+    /// If this function returns None, the stream has reached EOF.
     pub fn read_line(&mut self, buf: &mut String) -> Option<usize> {
         match self.inner.read_line(buf) {
             Ok(0) => {
@@ -118,7 +123,8 @@ impl<R: BufRead> TextReader<R> {
             .filter_map(|s| if let Ok(line) = s { Some(line) } else { None })
     }
 
-    /// Read all text into string `buf`.
+    /// Read all text into string `buf` (Note: out of memory issue for large
+    /// file)
     pub fn read_to_string(&mut self, buf: &mut String) -> Result<usize> {
         let n = self.inner.read_to_string(buf)?;
         Ok(n)
@@ -238,6 +244,7 @@ pub trait Partition {
 }
 
 impl<R: BufRead> TextReader<R> {
+    #[deprecated(note = "Use partitions instead")]
     /// Returns an iterator over `n` lines at a time.
     pub fn partition_by<P: Partition>(self, p: P) -> Partitions<R, P> {
         Partitions::new(self, p)
@@ -339,6 +346,7 @@ where
 }
 
 impl<R: BufRead> TextReader<R> {
+    #[deprecated(note = "Use partitions_terminated instead")]
     /// Returns an iterator over `n` lines at a time.
     pub fn terminated_bunches<F>(self, f: F) -> Partitions<R, Terminated<F>>
     where
@@ -371,6 +379,7 @@ where
 }
 
 impl<R: BufRead> TextReader<R> {
+    #[deprecated(note = "Use partitions_preceded instead")]
     /// Returns an iterator over `n` lines at a time.
     pub fn preceded_bunches<F>(self, f: F) -> Partitions<R, Preceded<F>>
     where

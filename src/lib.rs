@@ -4,6 +4,7 @@
 mod core;
 mod reader;
 mod parser;
+mod adhoc;
 // mods:1 ends here
 
 // exports
@@ -13,4 +14,8 @@ pub mod parsers;
 pub use crate::reader::*;
 
 pub use crate::parser::TextParser;
+
+pub mod partition {
+    pub use crate::adhoc::*;
+}
 // exports:1 ends here
