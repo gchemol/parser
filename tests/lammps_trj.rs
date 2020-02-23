@@ -221,7 +221,7 @@ fn test_parser() -> Result<()> {
     let fname = "tests/files/lammps-test.dump";
     let reader = TextReader::from_path(fname)?;
     let frames: Vec<_> = reader
-        .preceded_bunches(|line| line.starts_with("ITEM: TIMESTEP"))
+        .partitions_preceded(|line| line.starts_with("ITEM: TIMESTEP"))
         .map(|data| {
             let (_, part) = read_lammps_dump(&data).unwrap();
             part

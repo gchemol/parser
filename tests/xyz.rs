@@ -101,7 +101,7 @@ fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
     let reader = TextReader::from_path(fname)?;
     let parts: Vec<_> = reader
-        .preceded_bunches(|line| line.trim().parse::<usize>().is_ok())
+        .partitions_preceded(|line| line.trim().parse::<usize>().is_ok())
         .map(|s| {
             let (_, atoms) = read_xyz_stream(&s).unwrap();
             atoms

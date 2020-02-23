@@ -135,6 +135,7 @@ impl<R: BufRead> TextReader<R> {
 // impl/peeking
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*impl/peeking][impl/peeking:1]]
+#[deprecated(note = "Use partition::Partitions instead")]
 /// An iterator over partitioned lines of an instance of BufRead.
 ///
 /// see also: TextReader.partition_by method.
@@ -199,6 +200,7 @@ impl<R: BufRead, P: Partition> Iterator for Partitions<R, P> {
 }
 
 /// A helper struct for handling buffered text.
+#[deprecated(note = "Use partition::ReadContext instead")]
 pub struct ReadContext<'a> {
     buf: &'a str,
     nlist: &'a [usize],
@@ -252,47 +254,12 @@ impl<R: BufRead> TextReader<R> {
 }
 // impl/peeking:1 ends here
 
-// test
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
-#[test]
-fn test_partition() -> Result<()> {
-    // test partitions
-    let f = "./tests/files/Test.FChk";
-    let reader = TextReader::from_path(f)?;
-    let parts = reader.partition_by(ChkFile);
-    assert_eq!(parts.count(), 71);
-
-    // check string
-    let s = gut::fs::read_file(f)?;
-    let f = "./tests/files/multi.pxyz";
-    let reader = TextReader::from_str(&s);
-    let parts =  reader.partition_by(XyzFile);
-    assert_eq!(parts.count(), 7);
-
-    Ok(())
-}
-
-struct ChkFile;
-impl Partition for ChkFile {
-    fn read_next(&self, context: ReadContext) -> bool {
-        let line = context.next_line();
-        !(line.len() >= 50 && line.chars().next().unwrap().is_uppercase())
-    }
-}
-
-struct XyzFile;
-impl Partition for XyzFile {
-    fn read_next(&self, context: ReadContext) -> bool {
-        !context.this_line().trim().is_empty()
-    }
-}
-// test:1 ends here
-
 // chunks
 // Read text in chunk of every n lines.
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*chunks][chunks:1]]
+#[deprecated(note = "Use partition::Chunks instead")]
+/// An iterator over a chunk of text in `n` lines
 pub struct Chunks<R: BufRead> {
     reader: TextReader<R>,
     nlines: usize,
@@ -316,18 +283,19 @@ impl<R: BufRead> Iterator for Chunks<R> {
     }
 }
 
-impl<R: BufRead> TextReader<R> {
-    /// Returns an iterator over `n` lines at a time.
-    pub fn chunks(self, nlines: usize) -> Chunks<R> {
-        Chunks { reader: self, nlines }
-    }
-}
+// impl<R: BufRead> TextReader<R> {
+//     /// Returns an iterator over `n` lines at a time.
+//     pub fn chunks(self, nlines: usize) -> Chunks<R> {
+//         Chunks { reader: self, nlines }
+//     }
+// }
 // chunks:1 ends here
 
 // terminated with
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*terminated with][terminated with:1]]
-// Terminated with
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*terminated%20with][terminated with:1]]
+#[deprecated(note = "Use partition::Terminated instead")]
+/// Terminated with
 pub struct Terminated<F>
 where
     F: Fn(&str) -> bool,
@@ -359,8 +327,9 @@ impl<R: BufRead> TextReader<R> {
 
 // preceded with
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*preceded with][preceded with:1]]
-// Preceded with
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*preceded%20with][preceded with:1]]
+#[deprecated(note = "Use partition::Preceded instead")]
+/// Preceded with
 pub struct Preceded<F>
 where
     F: Fn(&str) -> bool,
@@ -404,6 +373,7 @@ impl<R: BufRead> TextReader<R> {
     }
 }
 
+#[deprecated(note = "Plan to be removed")]
 pub struct Bunches<F, R>
 where
     F: Fn(&str) -> bool,
@@ -475,28 +445,8 @@ where
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
 #[test]
 fn test_reader() -> Result<()> {
-    let f = "./tests/files/lammps-test.dump";
-    let reader = TextReader::from_path(f)?;
-    let bunches = reader.preceded_bunches(|line| line.starts_with("ITEM: TIMESTEP"));
-    assert_eq!(bunches.count(), 3);
-
-    let f = "./tests/files/multi.xyz";
-    let if_data_label = |line: &str| line.trim().parse::<usize>().is_ok();
-    let reader = TextReader::from_path(f)?;
-    let bunches = reader.preceded_bunches(if_data_label);
-    assert_eq!(bunches.count(), 6);
-
-    // test chunks
-    let reader = TextReader::from_path(f)?;
-    assert_eq!(reader.chunks(1).count(), 99);
-    let reader = TextReader::from_path(f)?;
-    let chunks = reader.chunks(5);
-    let nn: Vec<_> = chunks.map(|x| x.lines().count()).collect();
-    assert_eq!(nn.len(), 20);
-    assert_eq!(nn[0], 5);
-    assert_eq!(nn[19], 4);
-
     // test lines
+    let f = "./tests/files/multi.xyz";
     let reader = TextReader::from_path(f)?;
     let line = reader.lines().skip(1).next().unwrap();
     assert_eq!(line, " Configuration number :        7");

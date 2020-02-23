@@ -172,14 +172,14 @@ impl<R: BufRead> TextReader<R> {
 }
 // partitions:1 ends here
 
-// n-lines
+// chunks/n-lines
 // Each part has `n` lines
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*n-lines][n-lines:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*chunks/n-lines][chunks/n-lines:1]]
 /// Read in `n` lines at each time.
-pub struct Nlines(usize);
+pub struct Chunks(usize);
 
-impl ReadPart for Nlines {
+impl ReadPart for Chunks {
     fn n_stride(&self) -> usize {
         self.0
     }
@@ -187,11 +187,11 @@ impl ReadPart for Nlines {
 
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over each part of text in `n` lines.
-    pub fn partitions_n_lines(self, n: usize) -> Partitions<R, Nlines> {
-        Partitions::new(self, Nlines(n))
+    pub fn chunks(self, n: usize) -> Partitions<R, Chunks> {
+        Partitions::new(self, Chunks(n))
     }
 }
-// n-lines:1 ends here
+// chunks/n-lines:1 ends here
 
 // terminated
 // Each part terminated with a line
@@ -377,9 +377,9 @@ mod test {
         // read chunks in constant number of lines
         let f = "./tests/files/multi.xyz";
         let reader = TextReader::from_path(f)?;
-        assert_eq!(reader.partitions_n_lines(1).count(), 99, "chunks");
+        assert_eq!(reader.chunks(1).count(), 99, "chunks");
         let reader = TextReader::from_path(f)?;
-        let chunks = reader.partitions_n_lines(5);
+        let chunks = reader.chunks(5);
         let nn: Vec<_> = chunks.map(|x| x.lines().count()).collect();
         assert_eq!(nn.len(), 20, "chunks");
         assert_eq!(nn[0], 5, "chunks");
