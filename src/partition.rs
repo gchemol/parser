@@ -15,11 +15,11 @@ use gut::prelude::*;
 
 // read context
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*read%20context][read context:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*read context][read context:1]]
 /// A helper struct for handling buffered text.
 pub struct ReadContext<'a> {
     /// Buffered text.
-    pub chunk: &'a str,
+    chunk: &'a str,
     /// byte size for each line of text.
     nlist: &'a [usize],
 }
@@ -47,6 +47,11 @@ impl<'a> ReadContext<'a> {
         let nb = self.nlist[n];
         &self.chunk[ns..ns + nb]
     }
+
+    /// Return buffered text.
+    pub fn text(&self) -> &str {
+        &self.chunk
+    }
 }
 
 #[test]
@@ -61,7 +66,7 @@ fn test_read_context() {
     assert_eq!(context.line(3), "line 3\n");
 }
 
-// 以行为单位读取
+// Read text stream at line basis
 pub enum ReadAction {
     /// Need next n lines to decide
     Need(usize),

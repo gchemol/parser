@@ -14,6 +14,7 @@ type FileReader = BufReader<File>;
 
 fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
     let p = p.as_ref();
+    debug!("Reader for file: {}", p.display());
     let f = File::open(p).with_context(|| format!("Failed to open file {:?}", p))?;
 
     let reader = BufReader::new(f);
@@ -293,7 +294,7 @@ impl<R: BufRead> Iterator for Chunks<R> {
 
 // terminated with
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*terminated%20with][terminated with:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*terminated with][terminated with:1]]
 #[deprecated(note = "Use partition::Terminated instead")]
 /// Terminated with
 pub struct Terminated<F>
@@ -327,7 +328,7 @@ impl<R: BufRead> TextReader<R> {
 
 // preceded with
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*preceded%20with][preceded with:1]]
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*preceded with][preceded with:1]]
 #[deprecated(note = "Use partition::Preceded instead")]
 /// Preceded with
 pub struct Preceded<F>
