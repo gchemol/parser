@@ -2,6 +2,39 @@
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*docs][docs:1]]
 //! Split large text stream into multiple parts.
+//!
+//! # Example
+//!
+//! ```
+//! use gchemol_parser::TextReader;
+//! use gchemol_parser::partition::*;
+//! 
+//! let txt = ": part1> line 1
+//! : part1> line 2 tail
+//! : part2> line 3
+//! : part2> line 5 tail
+//! : part3> line 8 tail ";
+//! 
+//! // instruct TextReader how to split the text stream into multiple parts.
+//! struct PartX;
+//! impl ReadPart for PartX {
+//!     fn read_next(&self, context: ReadContext) -> ReadAction {
+//!         let n = context.number_of_lines();
+//!         // check the last line
+//!         if context.line(n).ends_with("tail\n") {
+//!             // make a new part terminated with this line
+//!             ReadAction::Done(n)
+//!         } else {
+//!             // continue to read next line until find another tail line
+//!             ReadAction::Need(1)
+//!         }
+//!     }
+//! }
+//! 
+//! let reader = TextReader::from_str(txt);
+//! let parts = reader.partitions(PartX);
+//! assert_eq!(parts.count(), 3);
+//! ```
 // docs:1 ends here
 
 // imports

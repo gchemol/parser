@@ -235,6 +235,7 @@ impl<'a> ReadContext<'a> {
     }
 }
 
+#[deprecated(note = "Use partition::ReadPart instead")]
 /// Read next line or not
 pub trait Partition {
     /// Instruct the reader to read in the next line or not.
