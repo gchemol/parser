@@ -63,6 +63,30 @@ pub fn not_space(s: &str) -> IResult<&str, &str> {
     is_not(" \t\r\n")(s)
 }
 
+/// Take and consuming to `token`.
+pub fn jump_to<'a>(token: &'a str) -> impl Fn(&'a str) -> IResult<&str, ()> {
+    map(pair(take_until(token), tag(token)), |_| ())
+}
+
+#[test]
+fn test_take() {
+    let x = "xxbcc aa cc";
+    let (r, _) = jump_to("aa")(x).unwrap();
+    assert_eq!(r, " cc");
+}
+
+/// Return and consume n elements from input string slice.
+///
+/// Why not use take directly: for avoiding compiling error when using in
+/// do_parse macro.
+pub fn take_s<'a>(n: usize) -> impl Fn(&'a str) -> IResult<&'a str, &'a str> {
+    take(n)
+}
+// base:1 ends here
+
+// numbers
+
+// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*numbers][numbers:1]]
 /// Match one unsigned integer: 123
 pub fn unsigned_digit(s: &str) -> IResult<&str, usize> {
     map(digit1, |s: &str| s.parse().unwrap())(s)
@@ -114,23 +138,48 @@ pub fn xyz_array(s: &str) -> IResult<&str, [f64; 3]> {
     Ok((r, [x, y, z]))
 }
 
-/// Take and consuming to `token`.
-pub fn jump_to<'a>(token: &'a str) -> impl Fn(&'a str) -> IResult<&str, ()> {
-    map(pair(take_until(token), tag(token)), |_| ())
+/// Parse a line containing many unsigned integers
+pub fn read_usize_many(s: &str) -> IResult<&str, Vec<usize>> {
+    use nom::character::complete::line_ending;
+
+    nom::sequence::terminated(
+        nom::sequence::delimited(
+            space0,
+            nom::multi::separated_nonempty_list(space1, unsigned_digit),
+            space0,
+        ),
+        line_ending,
+    )(s)
+}
+
+/// Parse a line containing a float number
+pub fn read_double(s: &str) -> IResult<&str, f64> {
+    use nom::character::complete::line_ending;
+
+    // allow white spaces
+    let p = nom::sequence::delimited(space0, double, space0);
+    nom::sequence::terminated(p, line_ending)(s)
+}
+
+/// Parse a line containing many float numbers
+pub fn read_double_many(s: &str) -> IResult<&str, Vec<f64>> {
+    use nom::character::complete::line_ending;
+
+    nom::sequence::terminated(
+        nom::sequence::delimited(space0, nom::multi::separated_nonempty_list(space1, double), space0),
+        line_ending,
+    )(s)
 }
 
 #[test]
-fn test_take() {
-    let x = "xxbcc aa cc";
-    let (r, _) = jump_to("aa")(x).unwrap();
-    assert_eq!(r, " cc");
-}
+fn test_read_numbers() {
+    let (_, ns) = read_usize_many("11 2 3 4 5\r\n\n").expect("usize parser");
+    assert_eq!(5, ns.len());
+    let _ = read_usize_many(" 11 2 3 4 5 \n").expect("usize parser");
+    let _ = read_usize_many("11 2 3 4 5 \r\n").expect("usize parser");
 
-/// Return and consume n elements from input string slice.
-///
-/// Why not use take directly: for avoiding compiling error when using in
-/// do_parse macro.
-pub fn take_s<'a>(n: usize) -> impl Fn(&'a str) -> IResult<&'a str, &'a str> {
-    take(n)
+    let line = " 1.2  3.4 -5.7 0.2 \n";
+    let (_, fs) = read_double_many(line).expect("f64 parser");
+    assert_eq!(4, fs.len());
 }
-// base:1 ends here
+// numbers:1 ends here
