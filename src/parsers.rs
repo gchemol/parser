@@ -1,12 +1,6 @@
-// docs
-// 小的, 基于行的解析元件, 不会返回incomplete error.
-
-
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*docs][docs:1]]
 //! Selected nom parser combinators (complete version, no streaming)
 // docs:1 ends here
-
-// base
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*base][base:1]]
 pub use crate::core::complete::*;
@@ -65,7 +59,7 @@ pub fn not_space(s: &str) -> IResult<&str, &str> {
 
 /// Take and consuming to `token`.
 pub fn jump_to<'a>(token: &'a str) -> impl Fn(&'a str) -> IResult<&str, ()> {
-    map(pair(take_until(token), tag(token)), |_| ())
+    context("jump to", map(pair(take_until(token), tag(token)), |_| ()))
 }
 
 #[test]
@@ -83,8 +77,6 @@ pub fn take_s<'a>(n: usize) -> impl Fn(&'a str) -> IResult<&'a str, &'a str> {
     take(n)
 }
 // base:1 ends here
-
-// numbers
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*numbers][numbers:1]]
 /// Match one unsigned integer: 123

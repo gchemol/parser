@@ -1,14 +1,15 @@
-// imports
-
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
 
 // imports:1 ends here
 
-// base
-
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*base][base:1]]
 pub use nom;
-pub use nom::IResult;
+// pub use nom::IResult;
+
+// parse result with verbose error
+pub type IResult<I, O> = nom::IResult<I, O, nom::error::VerboseError<I>>;
+// add error context
+pub use nom::error::context;
 
 // macros
 pub use nom::do_parse;
@@ -28,8 +29,6 @@ pub use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, t
 pub use nom::combinator::{map, map_opt, map_res};
 pub use nom::combinator::{not, opt, peek};
 // base:1 ends here
-
-// complete or streaming
 
 // [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*complete or streaming][complete or streaming:1]]
 macro_rules! nom_use {

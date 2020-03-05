@@ -1,5 +1,3 @@
-# cargo
-
 # [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*cargo][cargo:1]]
 [package]
 name = "gchemol-parser"
