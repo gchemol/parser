@@ -1,6 +1,4 @@
-// docs
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*docs][docs:1]]
+// [[file:../parser.note::*docs][docs:1]]
 //! Split large text stream into multiple parts.
 //!
 //! # Example
@@ -9,11 +7,11 @@
 //! use gchemol_parser::TextReader;
 //! use gchemol_parser::partition::*;
 //! 
-//! let txt = ": part1> line 1
-//! : part1> line 2 tail
-//! : part2> line 3
-//! : part2> line 5 tail
-//! : part3> line 8 tail ";
+//! let txt = "part1> line 1
+//! part1> line 2 tail
+//! part2> line 3
+//! part2> line 5 tail
+//! part3> line 8 tail ";
 //! 
 //! // instruct TextReader how to split the text stream into multiple parts.
 //! struct PartX;
@@ -37,18 +35,14 @@
 //! ```
 // docs:1 ends here
 
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
+// [[file:../parser.note::*imports][imports:1]]
 use std::io::prelude::*;
 
 use crate::reader::TextReader;
 use gut::prelude::*;
 // imports:1 ends here
 
-// read context
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*read context][read context:1]]
+// [[file:../parser.note::*read context][read context:1]]
 /// A helper struct for handling buffered text.
 pub struct ReadContext<'a> {
     /// Buffered text.
@@ -62,7 +56,7 @@ impl<'a> ReadContext<'a> {
         Self { chunk: buf, nlist }
     }
 
-    /// Return the number of lines that alredy read in.
+    /// Return the number of lines that already read in.
     #[inline]
     pub fn number_of_lines(&self) -> usize {
         self.nlist.len()
@@ -123,9 +117,7 @@ pub trait ReadPart {
 }
 // read context:1 ends here
 
-// partitions
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*partitions][partitions:1]]
+// [[file:../parser.note::*partitions][partitions:1]]
 /// An iterator over part of text stream.
 pub struct Partitions<R, P>
 where
@@ -209,10 +201,7 @@ impl<R: BufRead> TextReader<R> {
 }
 // partitions:1 ends here
 
-// chunks/n-lines
-// Each part has `n` lines
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*chunks/n-lines][chunks/n-lines:1]]
+// [[file:../parser.note::*chunks/n-lines][chunks/n-lines:1]]
 /// Read in `n` lines at each time.
 pub struct Chunks(usize);
 
@@ -239,18 +228,7 @@ impl<R: BufRead> TextReader<R> {
 }
 // chunks/n-lines:1 ends here
 
-// terminated
-// Each part terminated with a line
-// : part1> line 1
-// : part1> line 2 tail
-// : part2> line 3
-// : part2> line 4
-// : part2> line 5 tail
-// : part3> line 6
-// : part3> line 7
-// : part3> line 8 tail
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*terminated][terminated:1]]
+// [[file:../parser.note::*terminated][terminated:1]]
 // Terminated with a tail line
 pub struct Terminated<F>(pub F);
 
@@ -302,18 +280,7 @@ fn test_terminated() -> Result<()> {
 }
 // terminated:1 ends here
 
-// preceded
-// Each part preceded with a head line
-// : part1> line 1 head
-// : part1> line 2
-// : part2> line 3 head
-// : part2> line 4
-// : part2> line 5
-// : part3> line 6 head
-// : part3> line 7
-// : part3> line 8
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*preceded][preceded:1]]
+// [[file:../parser.note::*preceded][preceded:1]]
 // Preceded with a head line
 pub struct Preceded<F>(pub F)
 where
@@ -367,9 +334,7 @@ fn test_preceded() -> Result<()> {
 }
 // preceded:1 ends here
 
-// test
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
+// [[file:../parser.note::*test][test:1]]
 #[cfg(test)]
 mod test {
     use super::*;
