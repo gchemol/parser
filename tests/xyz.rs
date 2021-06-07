@@ -1,9 +1,4 @@
-// xyz.rs
-// :PROPERTIES:
-// :header-args: :tangle tests/xyz.rs
-// :END:
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*xyz.rs][xyz.rs:1]]
+// [[file:../parser.note::*xyz.rs][xyz.rs:1]]
 use gchemol_parser::parsers::*;
 use gchemol_parser::TextReader;
 use gut::prelude::*;
@@ -61,7 +56,7 @@ fn test_parser_read_atom() {
 /// C -10.0949 -0.5455  0.0000
 ///
 fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
-    let read_atoms = many1(read_atom_xyz);
+    let mut read_atoms = many1(read_atom_xyz);
     do_parse!(
         s,
         read_usize >>            // natoms

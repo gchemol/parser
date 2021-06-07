@@ -1,7 +1,7 @@
-# [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*cargo][cargo:1]]
+# [[file:parser.note::*cargo][cargo:1]]
 [package]
 name = "gchemol-parser"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Text parsing made simple"
@@ -12,8 +12,8 @@ license = "MIT OR Apache-2.0"
 exclude = ["bin/*", "docs/*", "ltxpng/*", "data/*"]
 
 [dependencies]
-nom = "5.1"
-gut = { version="0.1.1" , package="gchemol-gut" }
+nom = "6.1"
+gut = { version="0.1.5" , package="gchemol-gut" }
 
 [dev-dependencies]
 structopt = "0.3"

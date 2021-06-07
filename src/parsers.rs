@@ -1,8 +1,8 @@
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*docs][docs:1]]
+// [[file:../parser.note::*docs][docs:1]]
 //! Selected nom parser combinators (complete version, no streaming)
 // docs:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*base][base:1]]
+// [[file:../parser.note::*base][base:1]]
 pub use crate::core::complete::*;
 pub use crate::core::*;
 
@@ -58,7 +58,7 @@ pub fn not_space(s: &str) -> IResult<&str, &str> {
 }
 
 /// Take and consuming to `token`.
-pub fn jump_to<'a>(token: &'a str) -> impl Fn(&'a str) -> IResult<&str, ()> {
+pub fn jump_to<'a>(token: &'a str) -> impl FnMut(&'a str) -> IResult<&str, ()> {
     context("jump to", map(pair(take_until(token), tag(token)), |_| ()))
 }
 
@@ -73,12 +73,12 @@ fn test_take() {
 ///
 /// Why not use take directly: for avoiding compiling error when using in
 /// do_parse macro.
-pub fn take_s<'a>(n: usize) -> impl Fn(&'a str) -> IResult<&'a str, &'a str> {
+pub fn take_s<'a>(n: usize) -> impl FnMut(&'a str) -> IResult<&'a str, &'a str> {
     take(n)
 }
 // base:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*numbers][numbers:1]]
+// [[file:../parser.note::*numbers][numbers:1]]
 /// Match one unsigned integer: 123
 pub fn unsigned_digit(s: &str) -> IResult<&str, usize> {
     map(digit1, |s: &str| s.parse().unwrap())(s)
@@ -137,7 +137,7 @@ pub fn read_usize_many(s: &str) -> IResult<&str, Vec<usize>> {
     nom::sequence::terminated(
         nom::sequence::delimited(
             space0,
-            nom::multi::separated_nonempty_list(space1, unsigned_digit),
+            nom::multi::separated_list1(space1, unsigned_digit),
             space0,
         ),
         line_ending,
@@ -158,7 +158,7 @@ pub fn read_double_many(s: &str) -> IResult<&str, Vec<f64>> {
     use nom::character::complete::line_ending;
 
     nom::sequence::terminated(
-        nom::sequence::delimited(space0, nom::multi::separated_nonempty_list(space1, double), space0),
+        nom::sequence::delimited(space0, nom::multi::separated_list1(space1, double), space0),
         line_ending,
     )(s)
 }
