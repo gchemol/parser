@@ -1,8 +1,8 @@
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
+// [[file:../parser.note::*imports][imports:1]]
 
 // imports:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*base][base:1]]
+// [[file:../parser.note::*base][base:1]]
 pub use nom;
 // pub use nom::IResult;
 
@@ -21,7 +21,7 @@ pub use nom::branch::alt;
 pub use nom::multi::count;
 pub use nom::multi::many_m_n;
 pub use nom::multi::{many0, many1, many_till};
-pub use nom::multi::{separated_list, separated_nonempty_list};
+pub use nom::multi::{separated_list0, separated_list1};
 
 pub use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 
@@ -30,7 +30,7 @@ pub use nom::combinator::{map, map_opt, map_res};
 pub use nom::combinator::{not, opt, peek};
 // base:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*complete or streaming][complete or streaming:1]]
+// [[file:../parser.note::*complete or streaming][complete or streaming:1]]
 macro_rules! nom_use {
     ($input:ident) => {
         pub use nom::bytes::$input::{is_a, is_not};
