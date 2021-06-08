@@ -76,12 +76,22 @@ fn test_take() {
 pub fn take_s<'a>(n: usize) -> impl FnMut(&'a str) -> IResult<&'a str, &'a str> {
     take(n)
 }
+
+/// A combinator that takes a parser `inner` and produces a parser that also consumes both leading and
+/// trailing whitespace, returning the output of `inner`.
+pub fn ws<'a, F: 'a, O>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O>
+where
+    F: Fn(&'a str) -> IResult<&'a str, O>,
+{
+    let p = delimited(space0, inner, space0);
+    context("white space", p)
+}
 // base:1 ends here
 
 // [[file:../parser.note::*numbers][numbers:1]]
 /// Match one unsigned integer: 123
 pub fn unsigned_digit(s: &str) -> IResult<&str, usize> {
-    map(digit1, |s: &str| s.parse().unwrap())(s)
+    map_res(digit1, |s: &str| s.parse())(s)
 }
 
 pub fn signed_digit(s: &str) -> IResult<&str, isize> {
@@ -125,7 +135,8 @@ fn test_numbers() {
 
 /// Consume three float numbers separated by one or more spaces. Return xyz array.
 pub fn xyz_array(s: &str) -> IResult<&str, [f64; 3]> {
-    let (r, (x, _, y, _, z)) = tuple((double, space1, double, space1, double))(s)?;
+    let p = tuple((double, space1, double, space1, double));
+    let (r, (x, _, y, _, z)) = context("xyz array", p)(s)?;
 
     Ok((r, [x, y, z]))
 }
@@ -135,11 +146,7 @@ pub fn read_usize_many(s: &str) -> IResult<&str, Vec<usize>> {
     use nom::character::complete::line_ending;
 
     nom::sequence::terminated(
-        nom::sequence::delimited(
-            space0,
-            nom::multi::separated_list1(space1, unsigned_digit),
-            space0,
-        ),
+        nom::sequence::delimited(space0, nom::multi::separated_list1(space1, unsigned_digit), space0),
         line_ending,
     )(s)
 }

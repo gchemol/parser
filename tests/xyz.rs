@@ -25,24 +25,21 @@ impl Atom {
 ///
 /// C -11.4286  1.7645  0.0000
 fn read_atom_xyz(s: &str) -> IResult<&str, Atom> {
-    do_parse!(
-        s,
-        space0 >> // ignore optional preceeding space
-        sym     : alpha1    >> space1    >> // element symbol, e.g. "Fe"
-        position: xyz_array >> read_line >> // ignore the remaining characters
-        (
-            Atom::new(sym, position)
-        )
-    )
+    let mut p = tuple((ws(alpha1), ws(xyz_array), read_line));
+    let (s, (symbol, positions, _)) = context("read xyz atom", p)(s)?;
+
+    let atom = Atom::new(symbol, positions);
+    Ok((s, atom))
 }
 
 #[test]
-fn test_parser_read_atom() {
-    let (_, x) = read_atom_xyz("C -11.4286 -1.3155  0.0000 \n").unwrap();
+fn test_parser_read_atom() -> Result<()> {
+    let (_, x) = read_atom_xyz("C -11.4286 -1.3155  0.0000 \n").finish()?;
     assert_eq!("C", x.symbol);
-    let (_, x) = read_atom_xyz(" C -11.4286 -1.3155  0.0000 \n").unwrap();
+    let (_, x) = read_atom_xyz(" C -11.4286 -1.3155  0.0000 \n").finish()?;
     assert_eq!("C", x.symbol);
     assert_eq!(0.0, x.position[2]);
+    Ok(())
 }
 
 /// Create a list of atoms from many lines in xyz format
@@ -57,13 +54,14 @@ fn test_parser_read_atom() {
 ///
 fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
     let mut read_atoms = many1(read_atom_xyz);
-    do_parse!(
-        s,
-        read_usize >>            // natoms
-        read_line >>             // ignore title
-        atoms: read_atoms >>     // many atoms
-        (atoms)
-    )
+    let mut p = tuple((
+        read_usize, // natoms
+        read_line,  // ignore title
+        read_atoms, // many atoms
+    ));
+
+    let (s, (n, _, atoms)) = context("read xyz list", p)(s)?;
+    Ok((s, atoms))
 }
 
 #[test]

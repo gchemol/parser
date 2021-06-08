@@ -8,6 +8,7 @@ pub use nom;
 
 // parse result with verbose error
 pub type IResult<I, O> = nom::IResult<I, O, nom::error::VerboseError<I>>;
+
 // add error context
 pub use nom::error::context;
 
@@ -28,6 +29,12 @@ pub use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, t
 // combinator
 pub use nom::combinator::{map, map_opt, map_res};
 pub use nom::combinator::{not, opt, peek};
+
+// Some important traits
+//
+// we can call finish() method, and then propagate the errors normally with nice
+// error messages
+pub use nom::Finish;
 // base:1 ends here
 
 // [[file:../parser.note::*complete or streaming][complete or streaming:1]]
