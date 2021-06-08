@@ -37,6 +37,24 @@ pub use nom::combinator::{not, opt, peek};
 pub use nom::Finish;
 // base:1 ends here
 
+// [[file:../parser.note::*trace error][trace error:1]]
+use gut::prelude::*;
+
+/// Show nice parse trace on Error.
+pub trait TraceNomError<I, O> {
+    fn nom_trace_err(self) -> Result<(I, O)>;
+}
+
+impl<I: std::fmt::Display, O> TraceNomError<I, O> for IResult<I, O> {
+    fn nom_trace_err(self) -> Result<(I, O)> {
+        use nom::Finish;
+
+        let r = self.finish().map_err(|e| format_err!("nom parsing failure:\n{}", e))?;
+        Ok(r)
+    }
+}
+// trace error:1 ends here
+
 // [[file:../parser.note::*complete or streaming][complete or streaming:1]]
 macro_rules! nom_use {
     ($input:ident) => {

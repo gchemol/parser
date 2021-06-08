@@ -34,9 +34,9 @@ fn read_atom_xyz(s: &str) -> IResult<&str, Atom> {
 
 #[test]
 fn test_parser_read_atom() -> Result<()> {
-    let (_, x) = read_atom_xyz("C -11.4286 -1.3155  0.0000 \n").finish()?;
+    let (_, x) = read_atom_xyz("C -11.4286 -1.3155  0.0000 \n").nom_trace_err()?;
     assert_eq!("C", x.symbol);
-    let (_, x) = read_atom_xyz(" C -11.4286 -1.3155  0.0000 \n").finish()?;
+    let (_, x) = read_atom_xyz(" C -11.4286 -1.3155  0.0000 \n").nom_trace_err()?;
     assert_eq!("C", x.symbol);
     assert_eq!(0.0, x.position[2]);
     Ok(())
