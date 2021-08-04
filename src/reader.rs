@@ -1,11 +1,11 @@
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
+// [[file:../parser.note::*imports][imports:1]]
 use gut::fs::*;
 use gut::prelude::*;
 
 use std::io::Cursor;
 // imports:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*reader][reader:1]]
+// [[file:../parser.note::*reader][reader:1]]
 type FileReader = BufReader<File>;
 
 fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
@@ -43,18 +43,16 @@ impl<'a> TextReader<Cursor<&'a str>> {
 impl<R: Read> TextReader<BufReader<R>> {
     /// Build a text reader from a struct implementing Read trait.
     pub fn new(r: R) -> Self {
-        Self {
-            inner: BufReader::new(r),
-        }
+        Self { inner: BufReader::new(r) }
     }
 }
 
 impl<R: BufRead + Seek> TextReader<R> {
     /// Skip reading until finding a matched line. Return the position before
-    /// the matched line.
-    pub fn seek_line<F>(&mut self, f: F) -> Result<u64>
+    /// the matched line. Return error if not found.
+    pub fn seek_line<F>(&mut self, mut f: F) -> Result<u64>
     where
-        F: Fn(&str) -> bool,
+        F: FnMut(&str) -> bool,
     {
         let mut line = String::new();
         let mut m = 0u64;
@@ -62,15 +60,12 @@ impl<R: BufRead + Seek> TextReader<R> {
             let n = self.inner.read_line(&mut line)?;
             if n == 0 {
                 // EOF
-                break;
+                bail!("no matched line found!");
             } else {
                 // reverse the reading of the line
                 if f(&line) {
-                    // self.reader.seek(std::io::SeekFrom::Start(0));
-                    // let mut s = vec![0; m];
-                    // self.reader.read_exact(&mut s)?;
-                    // return Ok(String::from_utf8(s).unwrap());
-                    let _ = self.inner.seek(std::io::SeekFrom::Start(m))?;
+                    // self.inner.seek_relative(-1 * n as i64)?; // not work?
+                    let _ = self.inner.seek(std::io::SeekFrom::Current(-1 * n as i64))?;
                     return Ok(m);
                 }
             }
@@ -115,9 +110,7 @@ impl<R: BufRead> TextReader<R> {
     /// will not have a line ending.
     pub fn lines(self) -> impl Iterator<Item = String> {
         // silently ignore UTF-8 error
-        self.inner
-            .lines()
-            .filter_map(|s| if let Ok(line) = s { Some(line) } else { None })
+        self.inner.lines().filter_map(|s| if let Ok(line) = s { Some(line) } else { None })
     }
 
     /// Read all text into string `buf` (Note: out of memory issue for large
@@ -129,7 +122,7 @@ impl<R: BufRead> TextReader<R> {
 }
 // reader:1 ends here
 
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*test][test:1]]
+// [[file:../parser.note::*test][test:1]]
 #[test]
 fn test_reader() -> Result<()> {
     // test lines
