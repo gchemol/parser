@@ -1,21 +1,24 @@
-# cargo
-
-# [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*cargo][cargo:1]]
+# [[file:parser.note::*cargo][cargo:1]]
 [package]
-name = "text-parser"
-version = "0.0.4"
+name = "gchemol-parser"
+version = "0.3.0"
 edition = "2018"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
+description = "Text parsing made simple"
+homepage = "https://github.com/gchemol/parser"
+repository = "https://github.com/gchemol/parser"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+exclude = ["bin/*", "docs/*", "ltxpng/*", "data/*"]
 
 [dependencies]
-guts = { git = "https://github.com/ybyygu/guts.git" }
-#guts = { path = "../../guts" }
-nom = "5"
+nom = "6.1"
+gut = { version="0.1.5" , package="gchemol-gut" }
+grep = "0.2"
 
 [dev-dependencies]
 structopt = "0.3"
 
 [features]
-streaming = []
 adhoc = []
 # cargo:1 ends here

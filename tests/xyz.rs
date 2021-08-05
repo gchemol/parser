@@ -1,12 +1,7 @@
-// xyz.rs
-// :PROPERTIES:
-// :header-args: :tangle tests/xyz.rs
-// :END:
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*xyz.rs][xyz.rs:1]]
-use guts::prelude::*;
-use text_parser::parsers::*;
-use text_parser::TextReader;
+// [[file:../parser.note::*xyz.rs][xyz.rs:1]]
+use gchemol_parser::parsers::*;
+use gchemol_parser::TextReader;
+use gut::prelude::*;
 
 /// A minimal representation for chemical atom.
 #[derive(Debug)]
@@ -30,24 +25,21 @@ impl Atom {
 ///
 /// C -11.4286  1.7645  0.0000
 fn read_atom_xyz(s: &str) -> IResult<&str, Atom> {
-    do_parse!(
-        s,
-        space0 >> // ignore optional preceeding space
-        sym     : alpha1    >> space1    >> // element symbol, e.g. "Fe"
-        position: xyz_array >> read_line >> // ignore the remaining characters
-        (
-            Atom::new(sym, position)
-        )
-    )
+    let mut p = tuple((ws(alpha1), ws(xyz_array), read_line));
+    let (s, (symbol, positions, _)) = context("read xyz atom", p)(s)?;
+
+    let atom = Atom::new(symbol, positions);
+    Ok((s, atom))
 }
 
 #[test]
-fn test_parser_read_atom() {
-    let (_, x) = read_atom_xyz("C -11.4286 -1.3155  0.0000 \n").unwrap();
+fn test_parser_read_atom() -> Result<()> {
+    let (_, x) = read_atom_xyz("C -11.4286 -1.3155  0.0000 \n").nom_trace_err()?;
     assert_eq!("C", x.symbol);
-    let (_, x) = read_atom_xyz(" C -11.4286 -1.3155  0.0000 \n").unwrap();
+    let (_, x) = read_atom_xyz(" C -11.4286 -1.3155  0.0000 \n").nom_trace_err()?;
     assert_eq!("C", x.symbol);
     assert_eq!(0.0, x.position[2]);
+    Ok(())
 }
 
 /// Create a list of atoms from many lines in xyz format
@@ -61,18 +53,21 @@ fn test_parser_read_atom() {
 /// C -10.0949 -0.5455  0.0000
 ///
 fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
-    let read_atoms = many1(read_atom_xyz);
-    do_parse!(
-        s,
-        read_line >>             // ignore title
-        atoms: read_atoms >>     // many atoms
-        (atoms)
-    )
+    let mut read_atoms = many1(read_atom_xyz);
+    let mut p = tuple((
+        read_usize, // natoms
+        read_line,  // ignore title
+        read_atoms, // many atoms
+    ));
+
+    let (s, (n, _, atoms)) = context("read xyz list", p)(s)?;
+    Ok((s, atoms))
 }
 
 #[test]
 fn test_parser_read_xyz() {
-    let txt = " Configuration number :        7
+    let txt = " 16
+   Configuration number :        7
    N   1.38635  -0.29197   0.01352
    N  -1.38633   0.29227   0.00681
    C   0.91882   0.97077  -0.01878
@@ -99,11 +94,9 @@ fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
     let reader = TextReader::from_path(fname)?;
     let parts: Vec<_> = reader
-        .records(|line| line.trim().parse::<usize>().is_ok())
-        .map(|(l, s)| {
-            let natoms: usize = l.trim().parse().unwrap();
+        .partitions_preceded(|line| line.trim().parse::<usize>().is_ok())
+        .map(|s| {
             let (_, atoms) = read_xyz_stream(&s).unwrap();
-            assert_eq!(natoms, atoms.len());
             atoms
         })
         .collect();

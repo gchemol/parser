@@ -1,10 +1,8 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
+// [[file:../parser.note::*imports][imports:1]]
 use std::fs::File;
-use text_parser::*;
 
-use text_parser::parsers::*;
+use gchemol_parser::*;
+use gchemol_parser::parsers::*;
 // imports:1 ends here
 
 //    2 1 3 1 3 14 0         1.324         1.345         1.300         3.969         0.000         0.193
@@ -24,7 +22,7 @@ fn read_bond_order_sum(input: &str) -> IResult<&str, (usize, usize, f64)> {
 
     // read related bond orders
     let nskip = 2 * nbonds + 1;
-    let pskip = count(terminated(not_space, space1), nskip);
+    let mut pskip = count(terminated(not_space, space1), nskip);
     let (input, bosum) = do_parse!(
         input,
         space1 >> pskip >> // ignore preceding items
@@ -46,17 +44,7 @@ fn test_read_bond_order_sum() {
     assert_eq!(bosum, 3.969);
 }
 
-// parts
-// # Timestep 0
-// #
-// # Number of particles 1822
-// #
-// # Max number of bonds per atom 16 with coarse bond order cutoff 0.300
-// # Particle connection table and bond orders
-// # id type nb id_1...id_nb mol bo_1...bo_nb abo nlp q
-//  5 1 14 212 248 824 1000 392 648 1320 417 481 597 1381 245 1493 904 0
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*parts][parts:1]]
+// [[file:../parser.note::*parts][parts:1]]
 use std::collections::HashMap;
 
 fn read_meta_from_comments(s: &str) -> IResult<&str, (usize, usize)> {
@@ -98,10 +86,8 @@ fn read_part(s: &str) -> IResult<&str, Vec<(usize, usize, f64)>> {
 }
 // parts:1 ends here
 
-// core
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*core][core:1]]
-use guts::fs::*;
+// [[file:../parser.note::*core][core:1]]
+use gut::fs::*;
 fn average_bond_orders(fname: &str) -> Result<()> {
     // read the first 8 lines, determine the number of atoms in each frame
     let r = TextReader::from_path(fname)?;
@@ -137,11 +123,9 @@ fn average_bond_orders(fname: &str) -> Result<()> {
 }
 // core:1 ends here
 
-// main
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*main][main:1]]
-use guts::cli::*;
-use guts::prelude::*;
+// [[file:../parser.note::*main][main:1]]
+use gut::cli::*;
+use gut::prelude::*;
 
 use std::time;
 use structopt::StructOpt;
@@ -152,7 +136,7 @@ struct Cli {
     file: String,
 }
 
-fn main() -> CliResult {
+fn main() -> Result<()> {
     let args = Cli::from_args();
     setup_logger();
 
