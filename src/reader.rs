@@ -65,7 +65,9 @@ impl<R: BufRead + Seek> TextReader<R> {
                 // reverse the reading of the line
                 if f(&line) {
                     // self.inner.seek_relative(-1 * n as i64)?; // not work?
+                    // let _ = self.inner.seek(std::io::SeekFrom::Start(m))?;
                     let _ = self.inner.seek(std::io::SeekFrom::Current(-1 * n as i64))?;
+
                     return Ok(m);
                 }
             }

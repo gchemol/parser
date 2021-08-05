@@ -14,6 +14,7 @@ exclude = ["bin/*", "docs/*", "ltxpng/*", "data/*"]
 [dependencies]
 nom = "6.1"
 gut = { version="0.1.5" , package="gchemol-gut" }
+grep = "0.2"
 
 [dev-dependencies]
 structopt = "0.3"

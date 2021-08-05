@@ -23,17 +23,14 @@
 //! }
 //! ```
 
-// mods
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*mods][mods:1]]
+// [[file:../parser.note::*mods][mods:1]]
 mod core;
-mod reader;
+mod grep;
 mod parser;
+mod reader;
 // mods:1 ends here
 
-// exports
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*exports][exports:1]]
+// [[file:../parser.note::*exports][exports:1]]
 pub mod parsers;
 pub mod partition;
 pub use crate::reader::*;
