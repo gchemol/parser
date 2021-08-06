@@ -35,5 +35,6 @@ pub mod parsers;
 pub mod partition;
 pub use crate::reader::*;
 
+pub use crate::grep::GrepReader;
 pub use crate::parser::TextParser;
 // exports:1 ends here

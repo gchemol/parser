@@ -1,6 +1,10 @@
 // [[file:../parser.note::*imports][imports:1]]
 use gut::prelude::*;
 use std::path::{Path, PathBuf};
+
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
 // imports:1 ends here
 
 // [[file:../parser.note::*match][match:1]]
@@ -10,7 +14,17 @@ use grep::regex::RegexMatcher;
 // not contain a literal \n.
 fn make_matcher(pat: &str) -> Result<RegexMatcher> {
     let matcher = RegexMatcher::new_line_matcher(&pat)?;
-    // let matcher = RegexMatcher::new(&pat)?;
+    Ok(matcher)
+}
+
+// Build a new matcher from a plain alternation of literals, substantially
+// faster than by joining the patterns with a | and calling build.
+fn build_matcher_for_literals<B: AsRef<str>>(literals: &[B]) -> Result<RegexMatcher> {
+    let matcher = grep::regex::RegexMatcherBuilder::new()
+        .line_terminator(Some(b'\n'))
+        .multi_line(true) // allow ^ matches the beginning of lines and $ matches the end of lines
+        .build_literals(literals)?;
+
     Ok(matcher)
 }
 // match:1 ends here
@@ -50,14 +64,16 @@ use std::io::SeekFrom;
 
 /// Quick grep text by marking the line that matching a pattern
 #[derive(Debug)]
-pub struct TextGrep {
+pub struct GrepReader {
+    // A BufReader for File
     reader: BufReader<File>,
+    // marked positions
     position_markers: Vec<u64>,
     // current position
     marker_index: usize,
 }
 
-impl TextGrep {
+impl GrepReader {
     /// Build from file in path
     pub fn try_from_path<P: AsRef<Path>>(p: P) -> Result<Self> {
         let f = File::open(p)?;
@@ -72,11 +88,12 @@ impl TextGrep {
 
     /// Mark positions that matching pattern, so that we can seek these
     /// positions later. Return the number of marked positions.
-    pub fn mark(&mut self, pattern: &str) -> Result<usize> {
+    pub fn mark<B: AsRef<str>>(&mut self, patterns: &[B]) -> Result<usize> {
         let mut n = 0;
         let mut marked = vec![];
+        let matcher = build_matcher_for_literals(patterns)?;
         make_searcher().search_reader(
-            make_matcher(pattern)?,
+            matcher,
             &mut self.reader,
             PartSink(|pos, matched| {
                 marked.push(pos);
@@ -103,8 +120,8 @@ impl TextGrep {
         self.position_markers.len()
     }
 
-    /// Goto the next position that marked. Return None if no marked positions
-    /// or already reached the last marker.
+    /// Goto the next position that marked. Return marker position on success.
+    /// Return None if already reached the last marker or other errors.
     pub fn goto_next_marker(&mut self) -> Option<u64> {
         let n = self.position_markers.len();
         if self.marker_index < n {
@@ -113,7 +130,7 @@ impl TextGrep {
             match self.reader.seek(SeekFrom::Start(pos)) {
                 Ok(_) => Some(pos),
                 Err(e) => {
-                    dbg!(e);
+                    error!("found error: {:?}", e);
                     return None;
                 }
             }
@@ -122,49 +139,34 @@ impl TextGrep {
         }
     }
 
-    /// Read `n` lines into buffer in total, and return the buffer. Return error
-    /// if can not read in enough number of lines before EOF.
-    pub fn read_lines(&mut self, n: usize) -> Result<String> {
-        let mut s = String::new();
-        for i in 0..n {
-            let nbytes = self.reader.read_line(&mut s)?;
-            if nbytes == 0 {
-                bail!("EOF reached. Expect {} lines, but read in {} lines", n, i);
-            }
-        }
-        Ok(s)
+    /// Gets a mutable reference to the underlying reader.
+    pub fn get_mut(&mut self) -> &mut BufReader<File> {
+        &mut self.reader
     }
 }
 
 /// Do not count line number
 fn make_searcher() -> Searcher {
     SearcherBuilder::new()
-        // .line_number(false)
+        .line_number(false)
         .binary_detection(BinaryDetection::quit(b'\x00'))
         .build()
 }
 // api:1 ends here
 
 // [[file:../parser.note::*test][test:1]]
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
-
 #[test]
 fn test_grep() -> Result<()> {
-    let path = "/home/ybyygu/Workspace/Programming/structure-predication/reaction-explore/data/1a/4d21ab-f77a-49c6-a6fe-9b0f1ae4e6c3/TS_dimer/freq/OUTCAR";
+    let path = "./tests/files/multi.xyz";
+    let mut reader = GrepReader::try_from_path(path)?;
+    let n = reader.mark(&[r"^\s*\d+\s*$"])?;
+    assert_eq!(n, 6);
 
-    let mut reader = TextGrep::try_from_path(path)?;
-    let n = reader.mark(r" Electronic Relaxation|f/i= |NIONS =")?;
-    println!("marked {} positions", n);
-
-    dbg!(reader.read_lines(2));
-    let n = reader.goto_next_marker();
-    dbg!(n);
-    dbg!(reader.read_lines(2));
-    let n = reader.goto_next_marker();
-    dbg!(n);
-    dbg!(reader.read_lines(2));
+    let _ = reader.goto_next_marker();
+    let _ = reader.goto_next_marker();
+    let mut s = String::new();
+    let _ = reader.get_mut().read_line(&mut s)?;
+    assert_eq!(s.trim(), "10");
 
     Ok(())
 }
