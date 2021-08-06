@@ -22,7 +22,8 @@ fn make_matcher(pat: &str) -> Result<RegexMatcher> {
 fn build_matcher_for_literals<B: AsRef<str>>(literals: &[B]) -> Result<RegexMatcher> {
     let matcher = grep::regex::RegexMatcherBuilder::new()
         .line_terminator(Some(b'\n'))
-        .multi_line(true) // allow ^ matches the beginning of lines and $ matches the end of lines
+        // allow ^ matches the beginning of lines and $ matches the end of lines
+        .multi_line(true)
         .build_literals(literals)?;
 
     Ok(matcher)
@@ -48,12 +49,14 @@ where
     type Error = std::io::Error;
 
     fn matched(&mut self, _searcher: &Searcher, mat: &SinkMatch<'_>) -> std::io::Result<bool> {
-        let matched = match std::str::from_utf8(mat.bytes()) {
-            Ok(matched) => matched,
+        let matched_line = match std::str::from_utf8(mat.bytes()) {
+            Ok(matched_line) => matched_line,
             Err(err) => return Err(std::io::Error::error_message(err)),
         };
-        // dbg!(mat.line_number());
-        (self.0)(mat.absolute_byte_offset(), &matched)
+        // the absolute byte offset of the start of this match relative to the
+        // very beginning of the input.
+        let matched_line_position = mat.absolute_byte_offset();
+        (self.0)(matched_line_position, &matched_line)
     }
 }
 // sink:1 ends here
@@ -92,16 +95,20 @@ impl GrepReader {
         let mut n = 0;
         let mut marked = vec![];
         let matcher = build_matcher_for_literals(patterns)?;
+        // grep does not know current position of the reader
+        let pos_cur = self.reader.stream_position()?;
         make_searcher().search_reader(
             matcher,
             &mut self.reader,
-            PartSink(|pos, matched| {
-                marked.push(pos);
+            PartSink(|pos, _line| {
+                marked.push(pos + pos_cur);
                 n += 1;
                 Ok(true)
             }),
         )?;
+        // reset markers
         self.position_markers = marked;
+        self.marker_index = 0;
         Ok(n)
     }
 
@@ -171,7 +178,18 @@ fn test_grep() -> Result<()> {
     let _ = reader.goto_next_marker()?;
     let _ = reader.goto_next_marker()?;
     let mut s = String::new();
-    let _ = reader.get_mut().read_line(&mut s)?;
+    let _ = reader.read_lines(1, &mut s)?;
+    assert_eq!(s.trim(), "10");
+
+    // we can skip some lines before marking
+    reader.goto_start();
+    let mut s = String::new();
+    reader.read_lines(1, &mut s)?;
+    let n = reader.mark(&[r"^\s*\d+\s*$"])?;
+    assert_eq!(n, 5);
+    let _ = reader.goto_next_marker()?;
+    s.clear();
+    reader.read_lines(1, &mut s)?;
     assert_eq!(s.trim(), "10");
 
     Ok(())
