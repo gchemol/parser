@@ -122,20 +122,15 @@ impl GrepReader {
 
     /// Goto the next position that marked. Return marker position on success.
     /// Return None if already reached the last marker or other errors.
-    pub fn goto_next_marker(&mut self) -> Option<u64> {
+    pub fn goto_next_marker(&mut self) -> Result<u64> {
         let n = self.position_markers.len();
         if self.marker_index < n {
             let pos = self.position_markers[self.marker_index];
             self.marker_index += 1;
-            match self.reader.seek(SeekFrom::Start(pos)) {
-                Ok(_) => Some(pos),
-                Err(e) => {
-                    error!("found error: {:?}", e);
-                    return None;
-                }
-            }
+            let _ = self.reader.seek(SeekFrom::Start(pos))?;
+            Ok(pos)
         } else {
-            None
+            bail!("Already reached the last marker or no marker at all!");
         }
     }
 
@@ -173,8 +168,8 @@ fn test_grep() -> Result<()> {
     let n = reader.mark(&[r"^\s*\d+\s*$"])?;
     assert_eq!(n, 6);
 
-    let _ = reader.goto_next_marker();
-    let _ = reader.goto_next_marker();
+    let _ = reader.goto_next_marker()?;
+    let _ = reader.goto_next_marker()?;
     let mut s = String::new();
     let _ = reader.get_mut().read_line(&mut s)?;
     assert_eq!(s.trim(), "10");
