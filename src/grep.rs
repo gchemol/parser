@@ -139,6 +139,17 @@ impl GrepReader {
         }
     }
 
+    /// Read `n` lines into `buffer` on success. Return error if reached EOF early.
+    pub fn read_lines(&mut self, n: usize, buffer: &mut String) -> Result<()> {
+        for i in 0..n {
+            let nbytes = self.reader.read_line(buffer)?;
+            if nbytes == 0 {
+                bail!("The stream has reached EOF. Required {} lines, but filled {} lines", n, i);
+            }
+        }
+        Ok(())
+    }
+
     /// Gets a mutable reference to the underlying reader.
     pub fn get_mut(&mut self) -> &mut BufReader<File> {
         &mut self.reader
