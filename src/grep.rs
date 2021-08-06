@@ -61,6 +61,16 @@ where
 }
 // sink:1 ends here
 
+// [[file:../parser.note::*search][search:1]]
+/// Do not count line number
+fn make_searcher() -> Searcher {
+    SearcherBuilder::new()
+        .line_number(false)
+        .binary_detection(BinaryDetection::quit(b'\x00'))
+        .build()
+}
+// search:1 ends here
+
 // [[file:../parser.note::*api][api:1]]
 use grep::searcher::{BinaryDetection, Searcher, SearcherBuilder};
 use std::io::SeekFrom;
@@ -141,6 +151,15 @@ impl GrepReader {
         }
     }
 
+    /// Goto the marked position in `marker_index`. Will panic if marker_index
+    /// out of range.
+    pub fn goto_marker(&mut self, marker_index: usize) -> Result<u64> {
+        let pos = self.position_markers[marker_index];
+        let _ = self.reader.seek(SeekFrom::Start(pos))?;
+        self.marker_index = marker_index + 1;
+        Ok(pos)
+    }
+
     /// Read `n` lines into `buffer` on success. Return error if reached EOF early.
     pub fn read_lines(&mut self, n: usize, buffer: &mut String) -> Result<()> {
         for i in 0..n {
@@ -156,14 +175,6 @@ impl GrepReader {
     pub fn get_mut(&mut self) -> &mut BufReader<File> {
         &mut self.reader
     }
-}
-
-/// Do not count line number
-fn make_searcher() -> Searcher {
-    SearcherBuilder::new()
-        .line_number(false)
-        .binary_detection(BinaryDetection::quit(b'\x00'))
-        .build()
 }
 // api:1 ends here
 
@@ -191,6 +202,16 @@ fn test_grep() -> Result<()> {
     s.clear();
     reader.read_lines(1, &mut s)?;
     assert_eq!(s.trim(), "10");
+
+    // goto the marker directly
+    let _ = reader.goto_marker(3)?;
+    s.clear();
+    reader.read_lines(1, &mut s)?;
+    assert_eq!(s.trim(), "16");
+    let _ = reader.goto_next_marker()?;
+    s.clear();
+    reader.read_lines(1, &mut s)?;
+    assert_eq!(s.trim(), "13");
 
     Ok(())
 }
