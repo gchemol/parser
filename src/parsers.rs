@@ -2,7 +2,7 @@
 //! Selected nom parser combinators (complete version, no streaming)
 // docs:1 ends here
 
-// [[file:../parser.note::*base][base:1]]
+// [[file:../parser.note::653c73de][653c73de]]
 pub use crate::core::complete::*;
 pub use crate::core::*;
 
@@ -86,7 +86,7 @@ where
     let p = delimited(space0, inner, space0);
     context("white space", p)
 }
-// base:1 ends here
+// 653c73de ends here
 
 // [[file:../parser.note::*numbers][numbers:1]]
 /// Match one unsigned integer: 123

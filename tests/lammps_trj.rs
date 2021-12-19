@@ -1,15 +1,11 @@
-// imports
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*imports][imports:1]]
+// [[file:../parser.note::9ea6de01][9ea6de01]]
 use std::collections::HashMap;
 
 use gchemol_parser::parsers::*;
 use gut::prelude::*;
-// imports:1 ends here
+// 9ea6de01 ends here
 
-// meta
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*meta][meta:1]]
+// [[file:../parser.note::1a9804f9][1a9804f9]]
 #[derive(Debug)]
 struct FrameData {
     timestep: usize,
@@ -21,7 +17,7 @@ fn read_meta_data(s: &str) -> IResult<&str, FrameData> {
     let tag_natoms = tag("ITEM: NUMBER OF ATOMS");
     do_parse!(
         s,
-                  tag_timestep >> eol >>
+        tag_timestep >> eol >>
         timestep: read_usize  >> // current timestep in this frame
                   tag_natoms >> eol >>
         natoms  : read_usize  >> // number of atoms
@@ -48,12 +44,9 @@ ITEM: BOX BOUNDS pp pp pp
     assert_eq!(x.timestep, 0);
     assert_eq!(x.natoms, 537);
 }
-// meta:1 ends here
+// 1a9804f9 ends here
 
-// box
-// To be extended.
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*box][box:1]]
+// [[file:../parser.note::*box][box:1]]
 #[derive(Debug)]
 struct BoxData {
     t: String,
@@ -90,10 +83,7 @@ fn test_read_box_data() {
 }
 // box:1 ends here
 
-// atoms
-// Note: data in atom id column is not always sorted
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*atoms][atoms:1]]
+// [[file:../parser.note::*atoms][atoms:1]]
 // ITEM: ATOMS id type x y z c_eng c_cn c_cnt c_cna
 fn read_atom_header(s: &str) -> IResult<&str, &str> {
     let tag_item = tag("ITEM: ATOMS");
@@ -206,9 +196,7 @@ fn test_read_atoms() {
 }
 // atoms:1 ends here
 
-// main
-
-// [[file:~/Workspace/Programming/gchemol-rs/parser/parser.note::*main][main:1]]
+// [[file:../parser.note::827686b6][827686b6]]
 fn read_lammps_dump(input: &str) -> IResult<&str, HashMap<usize, Atom>> {
     let (rest, frame_data) = read_meta_data(input)?;
     let (rest, box_data) = read_box_data(rest)?;
@@ -231,4 +219,4 @@ fn test_parser() -> Result<()> {
 
     Ok(())
 }
-// main:1 ends here
+// 827686b6 ends here

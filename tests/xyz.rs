@@ -1,4 +1,4 @@
-// [[file:../parser.note::*xyz.rs][xyz.rs:1]]
+// [[file:../parser.note::99232ff4][99232ff4]]
 use gchemol_parser::parsers::*;
 use gchemol_parser::TextReader;
 use gut::prelude::*;
@@ -105,4 +105,4 @@ fn test_text_parser() -> Result<()> {
 
     Ok(())
 }
-// xyz.rs:1 ends here
+// 99232ff4 ends here
