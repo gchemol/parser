@@ -10,9 +10,9 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-use ropey::str_utils::{byte_to_line_idx, line_to_byte_idx};
+use ropey::str_utils::{byte_to_line_idx, char_to_byte_idx, line_to_byte_idx};
 
-/// A simple text view mode for quick peeking part of text
+/// A simple text view for quick peeking part of text
 pub struct TextViewer {
     text: String,
     pos: usize,
@@ -45,7 +45,7 @@ impl TextViewer {
     }
 
     /// Create a view of file context in path `p`
-    pub fn try_from_file(p: &Path) -> Result<Self> {
+    pub fn try_from_path(p: &Path) -> Result<Self> {
         let text = gut::fs::read_file(p)?;
         let view = Self::new(text);
         Ok(view)
@@ -62,6 +62,11 @@ impl TextViewer {
     /// Get line number at cursor
     pub fn current_line_num(&self) -> usize {
         self.pos_to_line_num(self.pos)
+    }
+
+    /// Peek the line at cursor
+    pub fn current_line(&self) -> &str {
+        self.peek_line(self.current_line_num())
     }
 
     /// Move the cursor to line `n`, counting from line 1 at beginning of the text.
@@ -92,6 +97,21 @@ impl TextViewer {
         let end = self.line_pos(m + 1);
         &self.text[beg..end]
     }
+
+    /// Return the part in a rectangular area of text
+    pub fn column_selection(&self, line_beg: usize, line_end: usize, col_beg: usize, col_end: usize) -> String {
+        assert!(line_beg <= line_end, "invalid line data: {:?}", (line_beg, line_end));
+        assert!(col_beg <= col_end, "invalid column data: {:?}", (col_beg, col_end));
+
+        let lines = self.peek_lines(line_beg, line_end);
+        let mut selection = vec![];
+        for x in lines.lines() {
+            let p1 = char_to_byte_idx(x, col_beg);
+            let p2 = char_to_byte_idx(x, col_end);
+            selection.push(&x[p1..p2]);
+        }
+        selection.join("\n")
+    }
 }
 // 09977f99 ends here
 
@@ -99,7 +119,7 @@ impl TextViewer {
 #[test]
 fn test_view() -> Result<()> {
     let f = "./tests/files/lammps-test.dump";
-    let mut view = TextView::try_from_file(f.as_ref())?;
+    let mut view = TextViewer::try_from_path(f.as_ref())?;
 
     assert_eq!(view.num_lines(), 1639);
     view.goto_line(2);
@@ -114,6 +134,19 @@ fn test_view() -> Result<()> {
     view.search_forward(r"^ITEM: NU.*$")?;
     let n = view.current_line_num();
     assert_eq!(n, 549);
+
+    Ok(())
+}
+
+#[test]
+fn test_column_selection() -> Result<()> {
+    let f = "./tests/files/multi.xyz";
+    let mut view = TextViewer::try_from_file(f.as_ref())?;
+    let s = view.column_selection(3, 5, 4, 100);
+    assert_eq!(s.lines().count(), 3);
+    let s = view.column_selection(3, 5, 4, 24);
+    assert_eq!(s.lines().next().unwrap().split_whitespace().count(), 2);
+    println!("{}", s);
 
     Ok(())
 }
