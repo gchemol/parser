@@ -23,9 +23,11 @@
 //! }
 //! ```
 
-// [[file:../parser.note::*imports][imports:1]]
+// [[file:../parser.note::cbed1309][cbed1309]]
 use gut::prelude::*;
-// imports:1 ends here
+
+use std::path::Path;
+// cbed1309 ends here
 
 // [[file:../parser.note::9b3ecbac][9b3ecbac]]
 mod core;

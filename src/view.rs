@@ -1,15 +1,8 @@
 // [[file:../parser.note::03bd258c][03bd258c]]
 use super::*;
-
-use regex::RegexBuilder;
-use ropey::Rope;
 // 03bd258c ends here
 
 // [[file:../parser.note::6c729559][6c729559]]
-use std::fs::File;
-use std::io::BufReader;
-use std::path::Path;
-
 use ropey::str_utils::{byte_to_line_idx, char_to_byte_idx, line_to_byte_idx};
 
 /// A simple text view for quick peeking part of text
@@ -37,6 +30,8 @@ impl TextViewer {
 // 6c729559 ends here
 
 // [[file:../parser.note::09977f99][09977f99]]
+use regex::RegexBuilder;
+
 /// Constructors
 impl TextViewer {
     /// Create a view of text string.
@@ -74,7 +69,7 @@ impl TextViewer {
         self.pos = self.line_pos(n);
     }
 
-    /// Move the cursor to the line matching the pattern
+    /// Move the cursor to the line matching the pattern. Regex pattern is allowed.
     pub fn search_forward(&mut self, pattern: &str) -> Result<usize> {
         let re = RegexBuilder::new(pattern).multi_line(true).build().context("invalid regex")?;
         self.pos = re
@@ -141,7 +136,7 @@ fn test_view() -> Result<()> {
 #[test]
 fn test_column_selection() -> Result<()> {
     let f = "./tests/files/multi.xyz";
-    let mut view = TextViewer::try_from_path(f.as_ref())?;
+    let view = TextViewer::try_from_path(f.as_ref())?;
     let s = view.column_selection(3, 5, 4, 100);
     assert_eq!(s.lines().count(), 3);
     let s = view.column_selection(3, 5, 4, 24);

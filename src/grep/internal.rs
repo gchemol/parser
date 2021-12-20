@@ -3,7 +3,7 @@ use super::*;
 // imports:1 ends here
 
 // [[file:../../parser.note::aba05bc2][aba05bc2]]
-use grep::regex::RegexMatcher;
+use ::grep::regex::{RegexMatcher, RegexMatcherBuilder};
 
 // Line oriented matches span no more than one line. The given pattern should
 // not contain a literal \n.
@@ -15,7 +15,7 @@ pub fn make_matcher(pat: &str) -> Result<RegexMatcher> {
 // Build a new matcher from a plain alternation of literals, substantially
 // faster than by joining the patterns with a | and calling build.
 pub fn build_matcher_for_literals<B: AsRef<str>>(literals: &[B]) -> Result<RegexMatcher> {
-    let matcher = grep::regex::RegexMatcherBuilder::new()
+    let matcher = RegexMatcherBuilder::new()
         .line_terminator(Some(b'\n'))
         // allow ^ matches the beginning of lines and $ matches the end of lines
         .multi_line(true)
@@ -26,7 +26,7 @@ pub fn build_matcher_for_literals<B: AsRef<str>>(literals: &[B]) -> Result<Regex
 // aba05bc2 ends here
 
 // [[file:../../parser.note::f1d2704d][f1d2704d]]
-use grep::searcher::{Sink, SinkError, SinkMatch};
+use ::grep::searcher::{Sink, SinkError, SinkMatch};
 
 /// The closure accepts two parameters: the absolute position of matched line
 /// and a UTF-8 string containing the matched data. The closure returns a
@@ -54,7 +54,7 @@ where
 // f1d2704d ends here
 
 // [[file:../../parser.note::ca7a00d2][ca7a00d2]]
-use grep::searcher::{BinaryDetection, Searcher, SearcherBuilder};
+use ::grep::searcher::{BinaryDetection, Searcher, SearcherBuilder};
 
 /// Do not count line number
 pub fn make_searcher() -> Searcher {
