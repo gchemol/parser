@@ -43,7 +43,7 @@ pub use nom::Finish;
 ///
 /// Used to wrap common expressions and function as macros.
 ///
-/// ```
+/// ```rust, ignore, no_run
 /// # #[macro_use] extern crate nom;
 /// # use nom::IResult;
 /// # fn main() {
@@ -71,7 +71,7 @@ macro_rules! call (
 /// This combinator will count how much data is consumed by every child parser
 /// and take it into account if there is not enough data.
 ///
-/// ```
+/// ```rust, ignore, no_run
 /// # #[macro_use] extern crate nom;
 /// # use nom::{Err,Needed};
 /// use nom::number::streaming::be_u8;
@@ -115,7 +115,7 @@ macro_rules! call (
 /// this:
 /// `do_parse!(I->IResult<I,A> >> I->IResult<I,B> >> ... I->IResult<I,X> , ( O, P ) ) => I -> IResult<I, (O,P)>`
 ///
-/// ```
+/// ```rust, ignore, no_run
 /// # #[macro_use] extern crate nom;
 /// use nom::number::streaming::be_u8;
 /// named!(tag_length_value<(u8, &[u8])>,

@@ -30,7 +30,7 @@ fn build_matcher_for_literals<B: AsRef<str>>(literals: &[B]) -> Result<RegexMatc
 }
 // match:1 ends here
 
-// [[file:../parser.note::*sink][sink:1]]
+// [[file:../parser.note::dc62fad5][dc62fad5]]
 use grep::searcher::{Sink, SinkError, SinkMatch};
 
 /// The closure accepts two parameters: the absolute position of matched line
@@ -49,17 +49,14 @@ where
     type Error = std::io::Error;
 
     fn matched(&mut self, _searcher: &Searcher, mat: &SinkMatch<'_>) -> std::io::Result<bool> {
-        let matched_line = match std::str::from_utf8(mat.bytes()) {
-            Ok(matched_line) => matched_line,
-            Err(err) => return Err(std::io::Error::error_message(err)),
-        };
+        let matched_line = std::str::from_utf8(mat.bytes()).map_err(|e| Self::Error::error_message(e))?;
         // the absolute byte offset of the start of this match relative to the
         // very beginning of the input.
         let matched_line_position = mat.absolute_byte_offset();
         (self.0)(matched_line_position, &matched_line)
     }
 }
-// sink:1 ends here
+// dc62fad5 ends here
 
 // [[file:../parser.note::*search][search:1]]
 /// Do not count line number
@@ -71,7 +68,7 @@ fn make_searcher() -> Searcher {
 }
 // search:1 ends here
 
-// [[file:../parser.note::*api][api:1]]
+// [[file:../parser.note::0a0d90f1][0a0d90f1]]
 use grep::searcher::{BinaryDetection, Searcher, SearcherBuilder};
 use std::io::SeekFrom;
 
@@ -138,7 +135,7 @@ impl GrepReader {
     }
 
     /// Goto the next position that marked. Return marker position on success.
-    /// Return None if already reached the last marker or other errors.
+    /// Return Err if already reached the last marker or other errors.
     pub fn goto_next_marker(&mut self) -> Result<u64> {
         let n = self.position_markers.len();
         if self.marker_index < n {
@@ -176,7 +173,7 @@ impl GrepReader {
         &mut self.reader
     }
 }
-// api:1 ends here
+// 0a0d90f1 ends here
 
 // [[file:../parser.note::*test][test:1]]
 #[test]

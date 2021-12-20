@@ -26,15 +26,15 @@
 // [[file:../parser.note::*mods][mods:1]]
 mod core;
 mod grep;
-mod parser;
+// mod parser;
 mod reader;
 // mods:1 ends here
 
-// [[file:../parser.note::*exports][exports:1]]
+// [[file:../parser.note::ff35c905][ff35c905]]
 pub mod parsers;
 pub mod partition;
 pub use crate::reader::*;
 
 pub use crate::grep::GrepReader;
-pub use crate::parser::TextParser;
-// exports:1 ends here
+// pub use crate::parser::TextParser;
+// ff35c905 ends here
