@@ -1,75 +1,21 @@
-// [[file:../parser.note::*imports][imports:1]]
+// [[file:../parser.note::ea2eb3e9][ea2eb3e9]]
 use gut::prelude::*;
 use std::path::{Path, PathBuf};
 
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-// imports:1 ends here
+// ea2eb3e9 ends here
 
-// [[file:../parser.note::*match][match:1]]
-use grep::regex::RegexMatcher;
-
-// Line oriented matches span no more than one line. The given pattern should
-// not contain a literal \n.
-fn make_matcher(pat: &str) -> Result<RegexMatcher> {
-    let matcher = RegexMatcher::new_line_matcher(&pat)?;
-    Ok(matcher)
-}
-
-// Build a new matcher from a plain alternation of literals, substantially
-// faster than by joining the patterns with a | and calling build.
-fn build_matcher_for_literals<B: AsRef<str>>(literals: &[B]) -> Result<RegexMatcher> {
-    let matcher = grep::regex::RegexMatcherBuilder::new()
-        .line_terminator(Some(b'\n'))
-        // allow ^ matches the beginning of lines and $ matches the end of lines
-        .multi_line(true)
-        .build_literals(literals)?;
-
-    Ok(matcher)
-}
-// match:1 ends here
-
-// [[file:../parser.note::dc62fad5][dc62fad5]]
-use grep::searcher::{Sink, SinkError, SinkMatch};
-
-/// The closure accepts two parameters: the absolute position of matched line
-/// and a UTF-8 string containing the matched data. The closure returns a
-/// `std::io::Result<bool>`. If the `bool` is `false`, then the search stops
-/// immediately. Otherwise, searching continues.
-#[derive(Clone, Debug)]
-struct PartSink<F>(pub F)
-where
-    F: FnMut(u64, &str) -> std::io::Result<bool>;
-
-impl<F> Sink for PartSink<F>
-where
-    F: FnMut(u64, &str) -> std::io::Result<bool>,
-{
-    type Error = std::io::Error;
-
-    fn matched(&mut self, _searcher: &Searcher, mat: &SinkMatch<'_>) -> std::io::Result<bool> {
-        let matched_line = std::str::from_utf8(mat.bytes()).map_err(|e| Self::Error::error_message(e))?;
-        // the absolute byte offset of the start of this match relative to the
-        // very beginning of the input.
-        let matched_line_position = mat.absolute_byte_offset();
-        (self.0)(matched_line_position, &matched_line)
-    }
-}
-// dc62fad5 ends here
-
-// [[file:../parser.note::*search][search:1]]
-/// Do not count line number
-fn make_searcher() -> Searcher {
-    SearcherBuilder::new()
-        .line_number(false)
-        .binary_detection(BinaryDetection::quit(b'\x00'))
-        .build()
-}
-// search:1 ends here
+// [[file:../parser.note::*mods][mods:1]]
+mod internal;
+// mods:1 ends here
 
 // [[file:../parser.note::0a0d90f1][0a0d90f1]]
-use grep::searcher::{BinaryDetection, Searcher, SearcherBuilder};
+use self::internal::build_matcher_for_literals;
+use self::internal::PartSink;
+use self::internal::make_searcher;
+
 use std::io::SeekFrom;
 
 /// Quick grep text by marking the line that matching a pattern
