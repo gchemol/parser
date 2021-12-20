@@ -23,12 +23,16 @@
 //! }
 //! ```
 
-// [[file:../parser.note::*mods][mods:1]]
+// [[file:../parser.note::*imports][imports:1]]
+use gut::prelude::*;
+// imports:1 ends here
+
+// [[file:../parser.note::9b3ecbac][9b3ecbac]]
 mod core;
 mod grep;
-// mod parser;
 mod reader;
-// mods:1 ends here
+mod view;
+// 9b3ecbac ends here
 
 // [[file:../parser.note::ff35c905][ff35c905]]
 pub mod parsers;
@@ -36,5 +40,6 @@ pub mod partition;
 pub use crate::reader::*;
 
 pub use crate::grep::GrepReader;
+pub use crate::view::TextViewer;
 // pub use crate::parser::TextParser;
 // ff35c905 ends here
