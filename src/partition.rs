@@ -42,7 +42,7 @@ use crate::reader::TextReader;
 use gut::prelude::*;
 // imports:1 ends here
 
-// [[file:../parser.note::*read context][read context:1]]
+// [[file:../parser.note::de2a5565][de2a5565]]
 /// A helper struct for handling buffered text.
 pub struct ReadContext<'a> {
     /// Buffered text.
@@ -93,7 +93,7 @@ fn test_read_context() {
     assert_eq!(context.line(3), "line 3\n");
 }
 
-// Read text stream at line basis
+/// Read text stream at line basis
 pub enum ReadAction {
     /// Need next n lines to decide
     Need(usize),
@@ -115,7 +115,7 @@ pub trait ReadPart {
         1
     }
 }
-// read context:1 ends here
+// de2a5565 ends here
 
 // [[file:../parser.note::*partitions][partitions:1]]
 /// An iterator over part of text stream.
@@ -228,8 +228,8 @@ impl<R: BufRead> TextReader<R> {
 }
 // chunks/n-lines:1 ends here
 
-// [[file:../parser.note::*terminated][terminated:1]]
-// Terminated with a tail line
+// [[file:../parser.note::f96ed947][f96ed947]]
+/// Terminated with a tail line
 pub struct Terminated<F>(pub F);
 
 impl<F> ReadPart for Terminated<F>
@@ -278,10 +278,10 @@ fn test_terminated() -> Result<()> {
 
     Ok(())
 }
-// terminated:1 ends here
+// f96ed947 ends here
 
-// [[file:../parser.note::*preceded][preceded:1]]
-// Preceded with a head line
+// [[file:../parser.note::2b9d1c8d][2b9d1c8d]]
+/// Preceded with a head line
 pub struct Preceded<F>(pub F)
 where
     F: Fn(&str) -> bool;
@@ -332,7 +332,7 @@ fn test_preceded() -> Result<()> {
 
     Ok(())
 }
-// preceded:1 ends here
+// 2b9d1c8d ends here
 
 // [[file:../parser.note::1970f69f][1970f69f]]
 #[cfg(test)]

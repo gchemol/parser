@@ -88,12 +88,13 @@ where
 }
 // 653c73de ends here
 
-// [[file:../parser.note::*numbers][numbers:1]]
+// [[file:../parser.note::06980c7a][06980c7a]]
 /// Match one unsigned integer: 123
 pub fn unsigned_digit(s: &str) -> IResult<&str, usize> {
     map_res(digit1, |s: &str| s.parse())(s)
 }
 
+/// Match one unsigned integer: -123 or +123
 pub fn signed_digit(s: &str) -> IResult<&str, isize> {
     use nom::combinator::recognize;
     let sign = opt(alt((tag("-"), tag("+"))));
@@ -181,4 +182,4 @@ fn test_read_numbers() {
     let (_, fs) = read_double_many(line).expect("f64 parser");
     assert_eq!(4, fs.len());
 }
-// numbers:1 ends here
+// 06980c7a ends here

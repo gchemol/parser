@@ -4,10 +4,10 @@
 
 // [[file:../parser.note::422da9c6][422da9c6]]
 pub use nom;
-// pub use nom::IResult;
 
-// parse result with verbose error
+/// parse result with verbose error
 pub type IResult<I, O> = nom::IResult<I, O, nom::error::VerboseError<I>>;
+// pub use nom::IResult;
 
 // add error context
 pub use nom::error::context;
@@ -267,15 +267,17 @@ macro_rules! do_parse (
 );
 // df9c1bf7 ends here
 
-// [[file:../parser.note::*trace error][trace error:1]]
+// [[file:../parser.note::259729c2][259729c2]]
 use gut::prelude::*;
 
 /// Show nice parse trace on Error.
 pub trait TraceNomError<I, O> {
+    /// Show verbose parse trace on Error.
     fn nom_trace_err(self) -> Result<(I, O)>;
 }
 
 impl<I: std::fmt::Display, O> TraceNomError<I, O> for IResult<I, O> {
+    /// Show verbose parse trace on Error.
     fn nom_trace_err(self) -> Result<(I, O)> {
         use nom::Finish;
 
@@ -283,9 +285,9 @@ impl<I: std::fmt::Display, O> TraceNomError<I, O> for IResult<I, O> {
         Ok(r)
     }
 }
-// trace error:1 ends here
+// 259729c2 ends here
 
-// [[file:../parser.note::*complete or streaming][complete or streaming:1]]
+// [[file:../parser.note::3803e309][3803e309]]
 macro_rules! nom_use {
     ($input:ident) => {
         pub use nom::bytes::$input::{is_a, is_not};
@@ -301,11 +303,13 @@ macro_rules! nom_use {
     };
 }
 
+/// non-streaming version parser combinators
 pub mod complete {
     nom_use!(complete);
 }
 
+/// streaming version parser combinators
 pub mod streaming {
     nom_use!(streaming);
 }
-// complete or streaming:1 ends here
+// 3803e309 ends here

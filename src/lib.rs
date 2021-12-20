@@ -1,3 +1,4 @@
+#![deny(missing_docs)]
 //! Text Reader for large text file.
 //!
 //! # Example

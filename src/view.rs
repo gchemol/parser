@@ -79,6 +79,7 @@ impl TextViewer {
         Ok(self.pos)
     }
 
+    /// Peek line `n`
     pub fn peek_line(&self, n: usize) -> &str {
         let beg = self.line_pos(n);
         let end = self.line_pos(n + 1);
