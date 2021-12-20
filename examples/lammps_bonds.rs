@@ -86,11 +86,11 @@ fn read_part(s: &str) -> IResult<&str, Vec<(usize, usize, f64)>> {
 }
 // parts:1 ends here
 
-// [[file:../parser.note::*core][core:1]]
+// [[file:../parser.note::2894a3cd][2894a3cd]]
 use gut::fs::*;
 fn average_bond_orders(fname: &str) -> Result<()> {
     // read the first 8 lines, determine the number of atoms in each frame
-    let r = TextReader::from_path(fname)?;
+    let r = TextReader::try_from_path(fname.as_ref())?;
     let chunk = r.chunks(8).next().unwrap();
     let (_, (_, n)) = read_meta_from_comments(&chunk).unwrap();
     dbg!(n);
@@ -99,7 +99,7 @@ fn average_bond_orders(fname: &str) -> Result<()> {
     let mut map_nbonds = HashMap::new();
     let mut map_bosum = HashMap::new();
     let mut i = 0;
-    let r = TextReader::from_path(fname)?;
+    let r = TextReader::try_from_path(fname.as_ref())?;
     for chunk in r.chunks(n + 7 + 1) {
         i += 1;
         let (_, m) = read_part(&chunk).unwrap();
@@ -121,7 +121,7 @@ fn average_bond_orders(fname: &str) -> Result<()> {
 
     Ok(())
 }
-// core:1 ends here
+// 2894a3cd ends here
 
 // [[file:../parser.note::*main][main:1]]
 use gut::cli::*;

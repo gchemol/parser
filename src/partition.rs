@@ -334,7 +334,7 @@ fn test_preceded() -> Result<()> {
 }
 // preceded:1 ends here
 
-// [[file:../parser.note::*test][test:1]]
+// [[file:../parser.note::1970f69f][1970f69f]]
 #[cfg(test)]
 mod test {
     use super::*;
@@ -359,7 +359,7 @@ mod test {
     #[test]
     fn test_adhoc() -> Result<()> {
         let f = "./tests/files/lammps-test.dump";
-        let reader = TextReader::from_path(f)?;
+        let reader = TextReader::try_from_path(f.as_ref())?;
 
         // preceded parts
         let parts = reader.partitions_preceded(|line| line.starts_with("ITEM: TIMESTEP"));
@@ -367,7 +367,7 @@ mod test {
 
         // terminated parts
         let f = "./tests/files/multi.xyz";
-        let reader = TextReader::from_path(f)?;
+        let reader = TextReader::try_from_path(f.as_ref())?;
         let parts: Vec<_> = reader.partitions(XyzFile).collect();
         assert_eq!(parts.len(), 6);
         assert_eq!(parts[0].lines().count(), 18);
@@ -379,9 +379,9 @@ mod test {
 
         // read chunks in constant number of lines
         let f = "./tests/files/multi.xyz";
-        let reader = TextReader::from_path(f)?;
+        let reader = TextReader::try_from_path(f.as_ref())?;
         assert_eq!(reader.chunks(1).count(), 99, "chunks");
-        let reader = TextReader::from_path(f)?;
+        let reader = TextReader::try_from_path(f.as_ref())?;
         let chunks = reader.chunks(5);
         let nn: Vec<_> = chunks.map(|x| x.lines().count()).collect();
         assert_eq!(nn.len(), 20, "chunks");
@@ -398,11 +398,11 @@ mod test {
         impl ReadPart for OnePart {}
 
         let f = "./tests/files/multi.xyz";
-        let reader = TextReader::from_path(f)?;
+        let reader = TextReader::try_from_path(f.as_ref())?;
         let parts = reader.partitions(OnePart);
         assert_eq!(parts.count(), 1);
 
         Ok(())
     }
 }
-// test:1 ends here
+// 1970f69f ends here

@@ -5,7 +5,7 @@ use gut::prelude::*;
 use std::io::Cursor;
 // imports:1 ends here
 
-// [[file:../parser.note::*reader][reader:1]]
+// [[file:../parser.note::3f27d680][3f27d680]]
 type FileReader = BufReader<File>;
 
 fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
@@ -24,8 +24,14 @@ pub struct TextReader<R: BufRead> {
 }
 
 impl TextReader<FileReader> {
+    #[deprecated(note = "Use TextReader::try_from_path instead")]
     /// Build a text reader for file from path `p`.
     pub fn from_path<P: AsRef<Path>>(p: P) -> Result<Self> {
+        Self::try_from_path(p.as_ref())
+    }
+
+    /// Build a text reader for file from path `p`.
+    pub fn try_from_path(p: &Path) -> Result<Self> {
         let reader = text_file_reader(p)?;
         let parser = Self { inner: reader };
         Ok(parser)
@@ -122,20 +128,20 @@ impl<R: BufRead> TextReader<R> {
         Ok(n)
     }
 }
-// reader:1 ends here
+// 3f27d680 ends here
 
-// [[file:../parser.note::*test][test:1]]
+// [[file:../parser.note::b7e82299][b7e82299]]
 #[test]
 fn test_reader() -> Result<()> {
     // test lines
     let f = "./tests/files/multi.xyz";
-    let reader = TextReader::from_path(f)?;
+    let reader = TextReader::try_from_path(f.as_ref())?;
     let line = reader.lines().skip(1).next().unwrap();
     assert_eq!(line, " Configuration number :        7");
 
     // test seeking
     let f = "./tests/files/ch3f.mol2";
-    let mut reader = TextReader::from_path(f)?;
+    let mut reader = TextReader::try_from_path(f.as_ref())?;
     let _ = reader.seek_line(|line| line.starts_with("@<TRIPOS>"))?;
     let line = reader.lines().next().expect("ch3f test");
     assert_eq!(line, "@<TRIPOS>MOLECULE");
@@ -148,4 +154,4 @@ fn test_reader() -> Result<()> {
 
     Ok(())
 }
-// test:1 ends here
+// b7e82299 ends here

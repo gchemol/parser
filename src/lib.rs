@@ -5,7 +5,7 @@
 //! ```
 //! use gchemol_parser::TextReader;
 //! 
-//! let mut reader = TextReader::from_path("./tests/files/ch3f.mol2").unwrap();
+//! let mut reader = TextReader::try_from_path("./tests/files/ch3f.mol2".as_ref()).unwrap();
 //! 
 //! // read a line into `s`
 //! let mut s = String::new();
@@ -41,5 +41,4 @@ pub use crate::reader::*;
 
 pub use crate::grep::GrepReader;
 pub use crate::view::TextViewer;
-// pub use crate::parser::TextParser;
 // ff35c905 ends here

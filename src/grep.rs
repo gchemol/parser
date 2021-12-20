@@ -13,8 +13,8 @@ mod internal;
 
 // [[file:../parser.note::0a0d90f1][0a0d90f1]]
 use self::internal::build_matcher_for_literals;
-use self::internal::PartSink;
 use self::internal::make_searcher;
+use self::internal::PartSink;
 
 use std::io::SeekFrom;
 
@@ -31,7 +31,7 @@ pub struct GrepReader {
 
 impl GrepReader {
     /// Build from file in path
-    pub fn try_from_path<P: AsRef<Path>>(p: P) -> Result<Self> {
+    pub fn try_from_path(p: &Path) -> Result<Self> {
         let f = File::open(p)?;
         let reader = BufReader::new(f);
         let grep = Self {
@@ -125,7 +125,7 @@ impl GrepReader {
 #[test]
 fn test_grep() -> Result<()> {
     let path = "./tests/files/multi.xyz";
-    let mut reader = GrepReader::try_from_path(path)?;
+    let mut reader = GrepReader::try_from_path(path.as_ref())?;
     let n = reader.mark(&[r"^\s*\d+\s*$"])?;
     assert_eq!(n, 6);
 

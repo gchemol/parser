@@ -92,7 +92,7 @@ fn test_parser_read_xyz() {
 #[test]
 fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
-    let reader = TextReader::from_path(fname)?;
+    let reader = TextReader::try_from_path(fname.as_ref())?;
     let parts: Vec<_> = reader
         .partitions_preceded(|line| line.trim().parse::<usize>().is_ok())
         .map(|s| {

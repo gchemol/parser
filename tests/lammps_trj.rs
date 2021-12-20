@@ -207,7 +207,7 @@ fn read_lammps_dump(input: &str) -> IResult<&str, HashMap<usize, Atom>> {
 fn test_parser() -> Result<()> {
     use gchemol_parser::TextReader;
     let fname = "tests/files/lammps-test.dump";
-    let reader = TextReader::from_path(fname)?;
+    let reader = TextReader::try_from_path(fname.as_ref())?;
     let frames: Vec<_> = reader
         .partitions_preceded(|line| line.starts_with("ITEM: TIMESTEP"))
         .map(|data| {

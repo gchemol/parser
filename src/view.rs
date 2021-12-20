@@ -141,7 +141,7 @@ fn test_view() -> Result<()> {
 #[test]
 fn test_column_selection() -> Result<()> {
     let f = "./tests/files/multi.xyz";
-    let mut view = TextViewer::try_from_file(f.as_ref())?;
+    let mut view = TextViewer::try_from_path(f.as_ref())?;
     let s = view.column_selection(3, 5, 4, 100);
     assert_eq!(s.lines().count(), 3);
     let s = view.column_selection(3, 5, 4, 24);
