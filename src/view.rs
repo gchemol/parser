@@ -6,6 +6,7 @@ use super::*;
 use ropey::str_utils::{byte_to_line_idx, char_to_byte_idx, line_to_byte_idx};
 
 /// A simple text view for quick peeking part of text
+#[derive(Debug, Clone)]
 pub struct TextViewer {
     text: String,
     pos: usize,
