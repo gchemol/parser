@@ -123,12 +123,11 @@ fn average_bond_orders(fname: &str) -> Result<()> {
 }
 // 2894a3cd ends here
 
-// [[file:../parser.note::*main][main:1]]
+// [[file:../parser.note::4d259c8c][4d259c8c]]
 use gut::cli::*;
 use gut::prelude::*;
 
 use std::time;
-use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -137,7 +136,7 @@ struct Cli {
 }
 
 fn main() -> Result<()> {
-    let args = Cli::from_args();
+    let args = Cli::parse();
     setup_logger();
 
     println!("parsing {:}", &args.file);
@@ -148,4 +147,4 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-// main:1 ends here
+// 4d259c8c ends here
