@@ -33,6 +33,7 @@ use std::path::Path;
 // [[file:../parser.note::9b3ecbac][9b3ecbac]]
 mod core;
 mod grep;
+mod grep_bin;
 mod reader;
 mod view;
 // 9b3ecbac ends here
