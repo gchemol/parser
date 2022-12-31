@@ -50,7 +50,8 @@ use std::io::SeekFrom;
 use std::path::{Path, PathBuf};
 
 /// Quick grep text by marking the line that matching a pattern,
-/// suitable for very large text file.
+/// suitable for very large text file. This requires external rg
+/// command in system.
 #[derive(Debug)]
 pub struct GrepReader {
     src: PathBuf,

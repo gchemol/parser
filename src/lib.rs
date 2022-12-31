@@ -32,7 +32,7 @@ use std::path::Path;
 
 // [[file:../parser.note::9b3ecbac][9b3ecbac]]
 mod core;
-mod grep;
+// mod grep;
 mod grep_bin;
 mod reader;
 mod view;
@@ -43,6 +43,6 @@ pub mod parsers;
 pub mod partition;
 pub use crate::reader::*;
 
-pub use crate::grep::GrepReader;
+pub use crate::grep_bin::GrepReader;
 pub use crate::view::TextViewer;
 // ff35c905 ends here
