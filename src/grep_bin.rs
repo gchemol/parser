@@ -54,6 +54,8 @@ mod rg {
 // 88a60571 ends here
 
 // [[file:../parser.note::b3c30bcf][b3c30bcf]]
+use crate::view::TextViewer;
+
 use std::io::SeekFrom;
 use std::path::{Path, PathBuf};
 
@@ -152,6 +154,15 @@ impl GrepReader {
     /// Gets a mutable reference to the underlying reader.
     pub fn get_mut(&mut self) -> &mut BufReader<File> {
         &mut self.reader
+    }
+
+    /// View next `n` lines like in a normal text viewer. This method
+    /// will forward the cursor by `n` lines.
+    pub fn view_lines(&mut self, n: usize) -> Result<TextViewer> {
+        let mut s = String::new();
+        self.read_lines(n, &mut s)?;
+        let v = TextViewer::from_str(&s);
+        Ok(v)
     }
 }
 // b3c30bcf ends here
