@@ -22,10 +22,18 @@ mod rg {
         absolute_offset: u64,
     }
 
-    pub fn mark_matched_positions_with_ripgrep(pattern: &str, path: &Path) -> Result<Vec<u64>> {
+    /// Mark positions with `pattern` using external ripgrep command.
+    ///
+    /// # Parameters
+    /// * max_count: exits search if max_count matches reached.
+    pub fn mark_matched_positions_with_ripgrep(pattern: &str, path: &Path, max_count: impl Into<Option<usize>>) -> Result<Vec<u64>> {
         use gut::cli::duct::cmd;
 
-        let json_out = cmd!("rg", "--no-line-number", "--json", pattern, path).read()?;
+        let json_out = if let Some(m) = max_count.into() {
+            cmd!("rg", "--no-line-number", "--max-count", m.to_string(), "--json", pattern, path).read()?
+        } else {
+            cmd!("rg", "--no-line-number", "--json", pattern, path).read()?
+        };
 
         let mut marked_positions = vec![];
         for line in json_out.lines() {
@@ -39,7 +47,7 @@ mod rg {
 
     #[test]
     fn test_json() {
-        let marked = mark_matched_positions_with_ripgrep("^ITEM: NUMBER OF ATOMS", "./tests/files/lammps-test.dump".as_ref()).unwrap();
+        let marked = mark_matched_positions_with_ripgrep("^ITEM: NUMBER OF ATOMS", "./tests/files/lammps-test.dump".as_ref(), None).unwrap();
         assert_eq!(marked.len(), 3);
     }
 }
@@ -80,10 +88,13 @@ impl GrepReader {
     /// Mark positions that matching `pattern`, so that we can seek
     /// these positions later. Regex can be used in `pattern`. Return
     /// the number of marked positions.
-    pub fn mark(&mut self, pattern: &str) -> Result<usize> {
+    ///
+    /// # Paramters
+    /// * max_count: exits search if max_count matches reached.
+    pub fn mark(&mut self, pattern: &str, max_count: impl Into<Option<usize>>) -> Result<usize> {
         use self::rg::mark_matched_positions_with_ripgrep;
 
-        self.position_markers = mark_matched_positions_with_ripgrep(pattern, &self.src)?;
+        self.position_markers = mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
         self.marker_index = 0;
         Ok(self.position_markers.len())
     }
@@ -150,7 +161,9 @@ impl GrepReader {
 fn test_grep() -> Result<()> {
     let path = "./tests/files/multi.xyz";
     let mut reader = GrepReader::try_from_path(path.as_ref())?;
-    let n = reader.mark(r"^\s*\d+\s*$")?;
+    let n = reader.mark(r"^\s*\d+\s*$", 2)?;
+    assert_eq!(n, 2);
+    let n = reader.mark(r"^\s*\d+\s*$", None)?;
     assert_eq!(n, 6);
 
     let _ = reader.goto_next_marker()?;
