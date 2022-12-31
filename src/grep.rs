@@ -17,7 +17,8 @@ use self::internal::PartSink;
 
 use std::io::SeekFrom;
 
-/// Quick grep text by marking the line that matching a pattern
+/// Quick grep text by marking the line that matching a pattern,
+/// suitable for very large text file.
 #[derive(Debug)]
 pub struct GrepReader {
     // A BufReader for File
@@ -64,17 +65,17 @@ impl GrepReader {
         Ok(n)
     }
 
-    /// Goto the start of the reader
+    /// Goto the start of inner file.
     pub fn goto_start(&mut self) {
         self.reader.rewind();
     }
 
-    /// Goto the end of the reader
+    /// Goto the end of inner file.
     pub fn goto_end(&mut self) {
         self.reader.seek(SeekFrom::End(0));
     }
 
-    /// Return the number of marked positions
+    /// Return the number of marked positions.
     pub fn num_markers(&self) -> usize {
         self.position_markers.len()
     }
@@ -102,7 +103,8 @@ impl GrepReader {
         Ok(pos)
     }
 
-    /// Read `n` lines into `buffer` on success. Return error if reached EOF early.
+    /// Return `n` lines in string on success from current
+    /// position. Return error if reached EOF early.
     pub fn read_lines(&mut self, n: usize, buffer: &mut String) -> Result<()> {
         for i in 0..n {
             let nbytes = self.reader.read_line(buffer)?;

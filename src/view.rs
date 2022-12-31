@@ -33,7 +33,8 @@ impl TextViewer {
 // [[file:../parser.note::09977f99][09977f99]]
 use regex::RegexBuilder;
 
-/// Constructors
+/// Constructor a `TextViewer` like a text reader in read-only mode,
+/// suitable for small file that can be fully read into memory.
 impl TextViewer {
     /// Create a view of text string.
     pub fn from_str(txt: &str) -> Self {
@@ -70,7 +71,7 @@ impl TextViewer {
         self.pos = self.line_pos(n);
     }
 
-    /// Move the cursor to the line matching the pattern. Regex pattern is allowed.
+    /// Move the cursor to the line matching `pattern`. Regex pattern is allowed.
     pub fn search_forward(&mut self, pattern: &str) -> Result<usize> {
         let re = RegexBuilder::new(pattern).multi_line(true).build().context("invalid regex")?;
         self.pos = re
