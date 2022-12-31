@@ -5,7 +5,7 @@ use super::*;
 // [[file:../parser.note::6c729559][6c729559]]
 use ropey::str_utils::{byte_to_line_idx, char_to_byte_idx, line_to_byte_idx};
 
-/// A simple text view for quick peeking part of text
+/// A simple line-based text viewer for quick peeking part of text
 #[derive(Debug, Clone)]
 pub struct TextViewer {
     text: String,
@@ -61,6 +61,11 @@ impl TextViewer {
         self.pos_to_line_num(self.pos)
     }
 
+    /// Return str slice of inner text.
+    pub fn text(&self) -> &str {
+        self.text.as_str()
+    }
+
     /// Peek the line at cursor
     pub fn current_line(&self) -> &str {
         self.peek_line(self.current_line_num())
@@ -71,13 +76,44 @@ impl TextViewer {
         self.pos = self.line_pos(n);
     }
 
-    /// Move the cursor to the line matching `pattern`. Regex pattern is allowed.
+    /// Move the cursor to the beginning of the last line.
+    pub fn goto_last(&mut self) {
+        self.goto_line(self.num_lines());
+    }
+
+    /// Move the cursor to the beginning of the next line.
+    pub fn goto_next(&mut self) {
+        self.goto_line(self.current_line_num() + 1);
+    }
+
+    /// Move the cursor to the beginning of the previous line.
+    pub fn goto_previous(&mut self) {
+        self.goto_line(self.current_line_num() - 1);
+    }
+
+    /// Move the cursor to the beginning of the first line.
+    pub fn goto_first(&mut self) {
+        self.goto_line(1);
+    }
+
+    /// Move the cursor to the line matching `pattern`. Regex pattern
+    /// is allowed. Return current point after search.
     pub fn search_forward(&mut self, pattern: &str) -> Result<usize> {
         let re = RegexBuilder::new(pattern).multi_line(true).build().context("invalid regex")?;
         self.pos = re
             .find_at(&self.text, self.pos)
             .ok_or(format_err!("pattern not found: {}", pattern))?
             .start();
+        Ok(self.pos)
+    }
+
+    /// Search backward from current point for `pattern`. Return
+    /// current point after search.
+    pub fn search_backward(&mut self, pattern: &str) -> Result<usize> {
+        let n = self.current_line_num();
+        let s = self.peek_lines(1, n);
+        let re = RegexBuilder::new(pattern).multi_line(true).build().context("invalid regex")?;
+        self.pos = re.find_iter(s).last().ok_or(format_err!("pattern not found: {}", pattern))?.start();
         Ok(self.pos)
     }
 
@@ -132,6 +168,15 @@ fn test_view() -> Result<()> {
     view.search_forward(r"^ITEM: NU.*$")?;
     let n = view.current_line_num();
     assert_eq!(n, 549);
+
+    // search back
+    view.goto_last();
+    let l = view.current_line();
+    assert!(l.is_empty());
+    view.search_backward("^523 ");
+    let l = view.current_line();
+    assert!(l.starts_with("523 1 5.00268"));
+    assert_eq!(view.current_line_num(), 1624);
 
     Ok(())
 }
