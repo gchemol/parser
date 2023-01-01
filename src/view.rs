@@ -76,24 +76,24 @@ impl TextViewer {
         self.pos = self.line_pos(n);
     }
 
+    /// Move the cursor to the beginning of the first line.
+    pub fn goto_first_line(&mut self) {
+        self.goto_line(1);
+    }
+
     /// Move the cursor to the beginning of the last line.
-    pub fn goto_last(&mut self) {
+    pub fn goto_last_line(&mut self) {
         self.goto_line(self.num_lines());
     }
 
     /// Move the cursor to the beginning of the next line.
-    pub fn goto_next(&mut self) {
+    pub fn goto_next_line(&mut self) {
         self.goto_line(self.current_line_num() + 1);
     }
 
     /// Move the cursor to the beginning of the previous line.
-    pub fn goto_previous(&mut self) {
+    pub fn goto_previous_line(&mut self) {
         self.goto_line(self.current_line_num() - 1);
-    }
-
-    /// Move the cursor to the beginning of the first line.
-    pub fn goto_first(&mut self) {
-        self.goto_line(1);
     }
 
     /// Move the cursor to the line matching `pattern`. Regex pattern
@@ -117,14 +117,15 @@ impl TextViewer {
         Ok(self.pos)
     }
 
-    /// Peek line `n`
+    /// Peek line `n` without moving cursor.
     pub fn peek_line(&self, n: usize) -> &str {
         let beg = self.line_pos(n);
         let end = self.line_pos(n + 1);
         &self.text[beg..end]
     }
 
-    /// Peek the text between line `n` and `m` (including line `m`)
+    /// Peek the text between line `n` and `m` (including line `m`),
+    /// without moving cursor.
     pub fn peek_lines(&self, n: usize, m: usize) -> &str {
         let beg = self.line_pos(n);
         // including the line `m`
@@ -132,10 +133,19 @@ impl TextViewer {
         &self.text[beg..end]
     }
 
-    /// Return the part in a rectangular area of text
-    pub fn column_selection(&self, line_beg: usize, line_end: usize, col_beg: usize, col_end: usize) -> String {
-        assert!(line_beg <= line_end, "invalid line data: {:?}", (line_beg, line_end));
+    /// Select the next `n` lines from current point, including current line.
+    pub fn selection(&self, n: usize) -> &str {
+        let m = self.current_line_num();
+        self.peek_lines(m, m + n - 1)
+    }
+
+    /// Select part of the string in next `n` lines (including
+    /// currrent line), in a rectangular area surrounded by columns in
+    /// `col_beg`--`col_end`.
+    pub fn column_selection(&self, n: usize, col_beg: usize, col_end: usize) -> String {
         assert!(col_beg <= col_end, "invalid column data: {:?}", (col_beg, col_end));
+        let line_beg = self.current_line_num();
+        let line_end = line_beg + n - 1;
 
         let lines = self.peek_lines(line_beg, line_end);
         let mut selection = vec![];
@@ -170,7 +180,7 @@ fn test_view() -> Result<()> {
     assert_eq!(n, 549);
 
     // search back
-    view.goto_last();
+    view.goto_last_line();
     let l = view.current_line();
     assert!(l.is_empty());
     view.search_backward("^523 ");
@@ -184,10 +194,13 @@ fn test_view() -> Result<()> {
 #[test]
 fn test_column_selection() -> Result<()> {
     let f = "./tests/files/multi.xyz";
-    let view = TextViewer::try_from_path(f.as_ref())?;
-    let s = view.column_selection(3, 5, 4, 100);
+    let mut view = TextViewer::try_from_path(f.as_ref())?;
+    view.goto_line(3);
+    let s = view.selection(2);
+    assert_eq!(s.lines().count(), 2);
+    let s = view.column_selection(3, 4, 100);
     assert_eq!(s.lines().count(), 3);
-    let s = view.column_selection(3, 5, 4, 24);
+    let s = view.column_selection(3, 4, 24);
     assert_eq!(s.lines().next().unwrap().split_whitespace().count(), 2);
     println!("{}", s);
 
