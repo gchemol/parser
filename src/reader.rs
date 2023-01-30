@@ -19,7 +19,7 @@ fn text_file_reader<P: AsRef<Path>>(p: P) -> Result<FileReader> {
 
 #[derive(Debug)]
 /// A stream reader for large text file
-pub struct TextReader<R: BufRead> {
+pub struct TextReader<R> {
     inner: R,
 }
 
@@ -44,36 +44,6 @@ impl<R: Read> TextReader<BufReader<R>> {
     /// Build a text reader from a struct implementing Read trait.
     pub fn new(r: R) -> Self {
         Self { inner: BufReader::new(r) }
-    }
-}
-
-impl<R: BufRead + Seek> TextReader<R> {
-    /// Skip reading until finding a matched line. Return the position before
-    /// the matched line. Return error if not found.
-    pub fn seek_line<F>(&mut self, mut f: F) -> Result<u64>
-    where
-        F: FnMut(&str) -> bool,
-    {
-        let mut line = String::new();
-        let mut m = 0u64;
-        loop {
-            let n = self.inner.read_line(&mut line)?;
-            if n == 0 {
-                // EOF
-                bail!("no matched line found!");
-            } else {
-                // reverse the reading of the line
-                if f(&line) {
-                    let _ = self.inner.seek(std::io::SeekFrom::Current(-1 * n as i64))?;
-
-                    return Ok(m);
-                }
-            }
-            m += n as u64;
-            line.clear();
-        }
-
-        Ok(m)
     }
 }
 
@@ -121,6 +91,50 @@ impl<R: BufRead> TextReader<R> {
     }
 }
 // 3f27d680 ends here
+
+// [[file:../parser.note::95fe0e8a][95fe0e8a]]
+use std::io::SeekFrom;
+
+impl<R: BufRead + Seek> TextReader<R> {
+    /// Skip reading until finding a matched line. Return the position before
+    /// the matched line. Return error if not found.
+    pub fn seek_line<F>(&mut self, mut f: F) -> Result<u64>
+    where
+        F: FnMut(&str) -> bool,
+    {
+        let mut line = String::new();
+        let mut m = 0u64;
+        loop {
+            let n = self.inner.read_line(&mut line)?;
+            if n == 0 {
+                // EOF
+                bail!("no matched line found!");
+            } else {
+                // reverse the reading of the line
+                if f(&line) {
+                    let _ = self.inner.seek(std::io::SeekFrom::Current(-1 * n as i64))?;
+
+                    return Ok(m);
+                }
+            }
+            m += n as u64;
+            line.clear();
+        }
+
+        Ok(m)
+    }
+
+    /// Goto the start of inner file.
+    pub fn goto_start(&mut self) {
+        self.inner.rewind();
+    }
+
+    /// Goto the end of inner file.
+    pub fn goto_end(&mut self) {
+        self.inner.seek(SeekFrom::End(0));
+    }
+}
+// 95fe0e8a ends here
 
 // [[file:../parser.note::b7e82299][b7e82299]]
 #[test]

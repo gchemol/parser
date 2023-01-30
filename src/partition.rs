@@ -192,6 +192,7 @@ impl<R: BufRead, P: ReadPart> Iterator for Partitions<R, P> {
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over part of text, using a generic text partioner
     /// `p`.
+    // #[deprecated(note = "please use GrepReader instead")]
     pub fn partitions<P>(self, p: P) -> Partitions<R, P>
     where
         P: ReadPart,
@@ -222,6 +223,7 @@ impl ReadPart for Chunks {
 
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over each part of text in `n` lines.
+    // #[deprecated(note = "please use GrepReader instead")]
     pub fn chunks(self, n: usize) -> Partitions<R, Chunks> {
         Partitions::new(self, Chunks(n))
     }
@@ -250,6 +252,7 @@ where
 
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over a part of text terminated with a tail line.
+    // #[deprecated(note = "please use GrepReader instead")]
     pub fn partitions_terminated<F>(self, f: F) -> Partitions<R, Terminated<F>>
     where
         F: Fn(&str) -> bool,
@@ -304,6 +307,7 @@ where
 
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over a part of text preceded with a head line.
+    // #[deprecated(note = "please use GrepReader instead")]
     pub fn partitions_preceded<F>(self, f: F) -> Partitions<R, Preceded<F>>
     where
         F: Fn(&str) -> bool,
