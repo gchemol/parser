@@ -117,7 +117,7 @@ pub trait ReadPart {
 }
 // de2a5565 ends here
 
-// [[file:../parser.note::*partitions][partitions:1]]
+// [[file:../parser.note::11167470][11167470]]
 /// An iterator over part of text stream.
 pub struct Partitions<R, P>
 where
@@ -199,9 +199,9 @@ impl<R: BufRead> TextReader<R> {
         Partitions::new(self, p)
     }
 }
-// partitions:1 ends here
+// 11167470 ends here
 
-// [[file:../parser.note::*chunks/n-lines][chunks/n-lines:1]]
+// [[file:../parser.note::9f67096e][9f67096e]]
 /// Read in `n` lines at each time.
 pub struct Chunks(usize);
 
@@ -226,7 +226,7 @@ impl<R: BufRead> TextReader<R> {
         Partitions::new(self, Chunks(n))
     }
 }
-// chunks/n-lines:1 ends here
+// 9f67096e ends here
 
 // [[file:../parser.note::f96ed947][f96ed947]]
 /// Terminated with a tail line

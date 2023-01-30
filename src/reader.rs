@@ -24,12 +24,6 @@ pub struct TextReader<R: BufRead> {
 }
 
 impl TextReader<FileReader> {
-    #[deprecated(note = "Use TextReader::try_from_path instead")]
-    /// Build a text reader for file from path `p`.
-    pub fn from_path<P: AsRef<Path>>(p: P) -> Result<Self> {
-        Self::try_from_path(p.as_ref())
-    }
-
     /// Build a text reader for file from path `p`.
     pub fn try_from_path(p: &Path) -> Result<Self> {
         let reader = text_file_reader(p)?;
@@ -70,8 +64,6 @@ impl<R: BufRead + Seek> TextReader<R> {
             } else {
                 // reverse the reading of the line
                 if f(&line) {
-                    // self.inner.seek_relative(-1 * n as i64)?; // not work?
-                    // let _ = self.inner.seek(std::io::SeekFrom::Start(m))?;
                     let _ = self.inner.seek(std::io::SeekFrom::Current(-1 * n as i64))?;
 
                     return Ok(m);
@@ -86,12 +78,12 @@ impl<R: BufRead + Seek> TextReader<R> {
 }
 
 impl<R: BufRead> TextReader<R> {
-    /// Read a new line into buf. Note: the new line is forced to use unix style
-    /// line ending.
+    /// Read a new line into buf.
     ///
-    /// This function will return the total number of bytes read.
-    ///
-    /// If this function returns None, the stream has reached EOF.
+    /// # NOTE
+    /// - The new line is forced to use unix style line ending.
+    /// - This function will return the total number of bytes read.
+    /// - If this function returns None, the stream has reached EOF.
     pub fn read_line(&mut self, buf: &mut String) -> Option<usize> {
         match self.inner.read_line(buf) {
             Ok(0) => {
