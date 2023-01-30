@@ -164,6 +164,44 @@ impl GrepReader {
         let v = TextViewer::from_str(&s);
         Ok(v)
     }
+
+    /// Return text from current position to the next marker or file
+    /// end. It method will forward the cursor to the next marker.
+    pub fn read_until_next_marker(&mut self) -> Result<String> {
+        let i = self.marker_index;
+
+        // read until EOF?
+        let mut s = String::new();
+        if i < self.position_markers.len() {
+            let pos_cur = self.reader.stream_position()?;
+            let pos_mark = self.position_markers[i];
+            ensure!(pos_cur < pos_mark, "cursor is behind marker");
+            let delta = pos_mark - pos_cur;
+            let mut nsum = 0;
+            for _ in 0.. {
+                let n = self.reader.read_line(&mut s)?;
+                assert_ne!(n, 0);
+                nsum += n as u64;
+                if nsum >= delta {
+                    break;
+                }
+            }
+            self.marker_index += 1;
+        } else {
+            while self.reader.read_line(&mut s)? != 0 {
+                //
+            }
+        }
+        Ok(s)
+    }
+
+    /// View all lines until next marker like in a normal text viewer.
+    /// It method will forward the cursor to the next marker.
+    pub fn view_until_next_marker(&mut self) -> Result<TextViewer> {
+        let s = self.read_until_next_marker()?;
+
+        Ok(TextViewer::from_str(&s))
+    }
 }
 // b3c30bcf ends here
 
@@ -192,6 +230,28 @@ fn test_grep() -> Result<()> {
     s.clear();
     reader.read_lines(1, &mut s)?;
     assert_eq!(s.trim(), "13");
+
+    Ok(())
+}
+
+#[test]
+fn test_grep_read_until() -> Result<()> {
+    let path = "./tests/files/multi.xyz";
+    // read until next marker
+    let mut reader = GrepReader::try_from_path(path.as_ref())?;
+    let n = reader.mark(r"^ Configuration number :", None)?;
+    assert_eq!(n, 6);
+    let s = reader.read_until_next_marker()?;
+    assert!(s.ends_with("          16\r\n"));
+    reader.goto_next_marker();
+    let s = reader.read_until_next_marker()?;
+    assert!(s.starts_with(" Configuration number :       14"));
+    assert!(s.ends_with("          16\r\n"));
+    assert_eq!(reader.marker_index, 3);
+    reader.goto_marker(5);
+    let s = reader.read_until_next_marker()?;
+    assert!(s.starts_with(" Configuration number :       42"));
+    assert!(s.ends_with("0.97637  -1.60620\r\n"));
 
     Ok(())
 }
