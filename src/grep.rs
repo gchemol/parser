@@ -6,52 +6,10 @@ use std::io::prelude::*;
 use std::io::BufReader;
 // imports:1 ends here
 
-// [[file:../parser.note::88a60571][88a60571]]
-mod rg {
-    use super::*;
-    use serde::Deserialize;
-
-    #[derive(Deserialize, Debug)]
-    struct GrepJsonOut {
-        r#type: String,
-        data: Data,
-    }
-
-    #[derive(Deserialize, Debug)]
-    struct Data {
-        absolute_offset: u64,
-    }
-
-    /// Mark positions with `pattern` using external ripgrep command.
-    ///
-    /// # Parameters
-    /// * max_count: exits search if max_count matches reached.
-    pub fn mark_matched_positions_with_ripgrep(pattern: &str, path: &Path, max_count: impl Into<Option<usize>>) -> Result<Vec<u64>> {
-        use gut::cli::duct::cmd;
-
-        let json_out = if let Some(m) = max_count.into() {
-            cmd!("rg", "--no-line-number", "--max-count", m.to_string(), "--json", pattern, path).read()?
-        } else {
-            cmd!("rg", "--no-line-number", "--json", pattern, path).read()?
-        };
-
-        let mut marked_positions = vec![];
-        for line in json_out.lines() {
-            if let Some(d) = serde_json::from_str::<GrepJsonOut>(line).ok() {
-                marked_positions.push(d.data.absolute_offset);
-            }
-        }
-
-        Ok(marked_positions)
-    }
-
-    #[test]
-    fn test_json() {
-        let marked = mark_matched_positions_with_ripgrep("^ITEM: NUMBER OF ATOMS", "./tests/files/lammps-test.dump".as_ref(), None).unwrap();
-        assert_eq!(marked.len(), 3);
-    }
-}
-// 88a60571 ends here
+// [[file:../parser.note::480b544e][480b544e]]
+mod grep_lib;
+mod grep_bin;
+// 480b544e ends here
 
 // [[file:../parser.note::b3c30bcf][b3c30bcf]]
 use crate::view::TextViewer;
@@ -94,9 +52,16 @@ impl GrepReader {
     /// # Paramters
     /// * max_count: exits search if max_count matches reached.
     pub fn mark(&mut self, pattern: &str, max_count: impl Into<Option<usize>>) -> Result<usize> {
-        use self::rg::mark_matched_positions_with_ripgrep;
+        let max_count = max_count.into();
+        if let Ok(marked) = self::grep_bin::mark_matched_positions_with_ripgrep(pattern, &self.src, max_count) {
+            self.position_markers = marked;
+        } else {
+            debug!("rg bin is not available. Mark with grep lib ...");
+            use self::grep_lib::mark_matched_positions_with_ripgrep;
+            self.position_markers = mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
+        }
+        // self.position_markers = self::grep_lib::mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
 
-        self.position_markers = mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
         self.marker_index = 0;
         Ok(self.position_markers.len())
     }
