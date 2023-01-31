@@ -69,8 +69,9 @@ impl<R: BufRead> TextReader<R> {
                 if buf.ends_with("\r\n") {
                     let i = buf.len() - 2;
                     buf.remove(i);
-                    // do not change real number of bytes read
-                    // n -= 1;
+                    // FIXME: review below
+                    // do not change real number of bytes read?
+                    n -= 1;
                 }
                 return Some(n);
             }
