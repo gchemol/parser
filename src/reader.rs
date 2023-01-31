@@ -69,7 +69,8 @@ impl<R: BufRead> TextReader<R> {
                 if buf.ends_with("\r\n") {
                     let i = buf.len() - 2;
                     buf.remove(i);
-                    n -= 1;
+                    // do not change real number of bytes read
+                    // n -= 1;
                 }
                 return Some(n);
             }
@@ -110,10 +111,9 @@ impl<R: BufRead + Seek> TextReader<R> {
                 // EOF
                 bail!("no matched line found!");
             } else {
-                // reverse the reading of the line
+                // back to line start position
                 if f(&line) {
                     let _ = self.inner.seek(std::io::SeekFrom::Current(-1 * n as i64))?;
-
                     return Ok(m);
                 }
             }
@@ -132,6 +132,27 @@ impl<R: BufRead + Seek> TextReader<R> {
     /// Goto the end of inner file.
     pub fn goto_end(&mut self) {
         self.inner.seek(SeekFrom::End(0));
+    }
+
+    /// Returns the current seek position from the start of the stream.
+    pub fn get_current_position(&mut self) -> Result<u64> {
+        let pos = self.inner.stream_position()?;
+        Ok(pos)
+    }
+
+    /// Goto to an absolute position, in bytes, in a text stream.
+    pub fn goto(&mut self, pos: u64) -> Result<()> {
+        let pos = self.inner.seek(SeekFrom::Start(pos))?;
+        Ok(())
+    }
+
+    /// Sets the offset to the current position plus the specified
+    /// number of bytes. If the seek operation completed successfully,
+    /// this method returns the new position from the start of the
+    /// stream.
+    pub fn goto_relative(&mut self, offset: i64) -> Result<u64> {
+        let pos = self.inner.seek(SeekFrom::Current(offset))?;
+        Ok(pos)
     }
 }
 // 95fe0e8a ends here
