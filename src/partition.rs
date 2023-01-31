@@ -35,12 +35,14 @@
 //! ```
 // docs:1 ends here
 
-// [[file:../parser.note::*imports][imports:1]]
+// [[file:../parser.note::fa39dec3][fa39dec3]]
+#![deprecated(note = "deprecated for bad performance")]
+
 use std::io::prelude::*;
 
 use crate::reader::TextReader;
 use gut::prelude::*;
-// imports:1 ends here
+// fa39dec3 ends here
 
 // [[file:../parser.note::de2a5565][de2a5565]]
 /// A helper struct for handling buffered text.
