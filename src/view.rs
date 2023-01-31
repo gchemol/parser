@@ -133,7 +133,8 @@ impl TextViewer {
         &self.text[beg..end]
     }
 
-    /// Select the next `n` lines from current point, including current line.
+    /// Select the next `n` lines from current point without moving
+    /// cursor, including current line.
     pub fn selection(&self, n: usize) -> &str {
         let m = self.current_line_num();
         self.peek_lines(m, m + n - 1)

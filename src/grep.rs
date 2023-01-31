@@ -18,8 +18,8 @@ use std::io::SeekFrom;
 use std::path::{Path, PathBuf};
 
 /// Quick grep text by marking the line that matching a pattern,
-/// suitable for very large text file. This requires external rg
-/// command in system.
+/// suitable for very large text file. If external rg command exists
+/// in system, it will be called preferably for better performance.
 #[derive(Debug)]
 pub struct GrepReader {
     src: PathBuf,
@@ -132,11 +132,10 @@ impl GrepReader {
 
     /// Return text from current position to the next marker or file
     /// end. It method will forward the cursor to the next marker.
-    pub fn read_until_next_marker(&mut self) -> Result<String> {
+    pub fn read_until_next_marker(&mut self, s: &mut String) -> Result<()> {
         let i = self.marker_index;
 
         // read until EOF?
-        let mut s = String::new();
         if i < self.position_markers.len() {
             let pos_cur = self.reader.stream_position()?;
             let pos_mark = self.position_markers[i];
@@ -144,7 +143,7 @@ impl GrepReader {
             let delta = pos_mark - pos_cur;
             let mut nsum = 0;
             for _ in 0.. {
-                let n = self.reader.read_line(&mut s)?;
+                let n = self.reader.read_line(s)?;
                 assert_ne!(n, 0);
                 nsum += n as u64;
                 if nsum >= delta {
@@ -153,18 +152,18 @@ impl GrepReader {
             }
             self.marker_index += 1;
         } else {
-            while self.reader.read_line(&mut s)? != 0 {
+            while self.reader.read_line(s)? != 0 {
                 //
             }
         }
-        Ok(s)
+        Ok(())
     }
 
     /// View all lines until next marker like in a normal text viewer.
     /// It method will forward the cursor to the next marker.
     pub fn view_until_next_marker(&mut self) -> Result<TextViewer> {
-        let s = self.read_until_next_marker()?;
-
+        let mut s = String::new();
+        self.read_until_next_marker(&mut s)?;
         Ok(TextViewer::from_str(&s))
     }
 }
@@ -206,15 +205,18 @@ fn test_grep_read_until() -> Result<()> {
     let mut reader = GrepReader::try_from_path(path.as_ref())?;
     let n = reader.mark(r"^ Configuration number :", None)?;
     assert_eq!(n, 6);
-    let s = reader.read_until_next_marker()?;
+    let mut s = String::new();
+    reader.read_until_next_marker(&mut s)?;
     assert!(s.ends_with("          16\r\n"));
+    s.clear();
     reader.goto_next_marker();
-    let s = reader.read_until_next_marker()?;
+    reader.read_until_next_marker(&mut s)?;
     assert!(s.starts_with(" Configuration number :       14"));
     assert!(s.ends_with("          16\r\n"));
     assert_eq!(reader.marker_index, 3);
     reader.goto_marker(5);
-    let s = reader.read_until_next_marker()?;
+    s.clear();
+    reader.read_until_next_marker(&mut s)?;
     assert!(s.starts_with(" Configuration number :       42"));
     assert!(s.ends_with("0.97637  -1.60620\r\n"));
 
