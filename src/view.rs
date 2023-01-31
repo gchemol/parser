@@ -97,24 +97,24 @@ impl TextViewer {
     }
 
     /// Move the cursor to the line matching `pattern`. Regex pattern
-    /// is allowed. Return current point after search.
+    /// is allowed. Return current line number after search.
     pub fn search_forward(&mut self, pattern: &str) -> Result<usize> {
         let re = RegexBuilder::new(pattern).multi_line(true).build().context("invalid regex")?;
         self.pos = re
             .find_at(&self.text, self.pos)
             .ok_or(format_err!("pattern not found: {}", pattern))?
             .start();
-        Ok(self.pos)
+        Ok(self.current_line_num())
     }
 
     /// Search backward from current point for `pattern`. Return
-    /// current point after search.
+    /// current line number after search.
     pub fn search_backward(&mut self, pattern: &str) -> Result<usize> {
         let n = self.current_line_num();
         let s = self.peek_lines(1, n);
         let re = RegexBuilder::new(pattern).multi_line(true).build().context("invalid regex")?;
         self.pos = re.find_iter(s).last().ok_or(format_err!("pattern not found: {}", pattern))?.start();
-        Ok(self.pos)
+        Ok(self.current_line_num())
     }
 
     /// Peek line `n` without moving cursor.
