@@ -36,7 +36,7 @@
 // docs:1 ends here
 
 // [[file:../parser.note::fa39dec3][fa39dec3]]
-#![deprecated(note = "deprecated for bad performance")]
+// #![deprecated(note = "deprecated for bad performance")]
 
 use std::io::prelude::*;
 
@@ -194,7 +194,6 @@ impl<R: BufRead, P: ReadPart> Iterator for Partitions<R, P> {
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over part of text, using a generic text partioner
     /// `p`.
-    // #[deprecated(note = "please use GrepReader instead")]
     pub fn partitions<P>(self, p: P) -> Partitions<R, P>
     where
         P: ReadPart,
@@ -205,29 +204,21 @@ impl<R: BufRead> TextReader<R> {
 // 11167470 ends here
 
 // [[file:../parser.note::9f67096e][9f67096e]]
-/// Read in `n` lines at each time.
-pub struct Chunks(usize);
-
-impl ReadPart for Chunks {
-    fn read_next(&self, context: ReadContext) -> ReadAction {
-        let n = context.number_of_lines();
-        if n == self.0 {
-            ReadAction::Done(n)
-        } else {
-            unreachable!()
-        }
-    }
-
-    fn n_stride(&self) -> usize {
-        self.0
-    }
-}
-
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over each part of text in `n` lines.
-    // #[deprecated(note = "please use GrepReader instead")]
-    pub fn chunks(self, n: usize) -> Partitions<R, Chunks> {
-        Partitions::new(self, Chunks(n))
+    pub fn chunks(mut self, n: usize) -> impl Iterator<Item = String> {
+        std::iter::from_fn(move || {
+            let mut s = String::new();
+            for i in 0..n {
+                // special treatment for the last line
+                match (i, self.read_line(&mut s)) {
+                    (_, Some(_)) => {}
+                    (0, None) => return None,
+                    (_, None) => return Some(s),
+                }
+            }
+            Some(s)
+        })
     }
 }
 // 9f67096e ends here
@@ -254,7 +245,6 @@ where
 
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over a part of text terminated with a tail line.
-    // #[deprecated(note = "please use GrepReader instead")]
     pub fn partitions_terminated<F>(self, f: F) -> Partitions<R, Terminated<F>>
     where
         F: Fn(&str) -> bool,

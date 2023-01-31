@@ -51,7 +51,6 @@ fn test_parser_read_atom() -> Result<()> {
 /// C -11.4286  1.7645  0.0000
 /// C -10.0949  0.9945  0.0000
 /// C -10.0949 -0.5455  0.0000
-///
 fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
     let mut read_atoms = many1(read_atom_xyz);
     let mut p = tuple((
