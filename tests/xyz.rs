@@ -1,6 +1,6 @@
 // [[file:../parser.note::99232ff4][99232ff4]]
 use gchemol_parser::parsers::*;
-use gchemol_parser::TextReader;
+use gchemol_parser::GrepReader;
 use gut::prelude::*;
 
 /// A minimal representation for chemical atom.
@@ -92,16 +92,26 @@ fn test_parser_read_xyz() {
 #[test]
 fn test_text_parser() -> Result<()> {
     let fname = "tests/files/multi.xyz";
-    let reader = TextReader::try_from_path(fname.as_ref())?;
-    let parts: Vec<_> = reader
-        .partitions_preceded(|line| line.trim().parse::<usize>().is_ok())
-        .map(|s| {
-            let (_, atoms) = read_xyz_stream(&s).unwrap();
-            atoms
+    let mut reader = GrepReader::try_from_path(fname.as_ref())?;
+    let n = reader.mark(r"^\s*\d+\s*$", None)?;
+    assert_eq!(n, 6);
+    reader.goto_next_marker()?;
+    let parts = (0..n).map(move |i| {
+        let mut s = String::new();
+        reader.read_until_next_marker(&mut s)?;
+        Ok_(s) // anyhow wrapper function for Ok
+    });
+
+    let mols: Result<Vec<_>> = parts
+        .map(|part| {
+            let part = part?;
+            let (_, mol) = read_xyz_stream(&part).map_err(|e| anyhow!("nom parse error: {e:?}\nstream = {part:?}"))?;
+            Ok(mol)
         })
         .collect();
-
-    assert_eq!(parts.len(), 6);
+    let mols = mols?;
+    assert_eq!(mols.len(), 6);
+    assert_eq!(mols[5].len(), 13);
 
     Ok(())
 }

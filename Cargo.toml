@@ -12,8 +12,8 @@ license = "MIT OR Apache-2.0"
 exclude = ["bin/*", "docs/*", "ltxpng/*", "data/*"]
 
 [dependencies]
-nom = "7.1"
-gut = { version = "0.4", package = "gchemol-gut" }
+nom = "7.1.3"
+gut = { version = "0.4.2", package = "gchemol-gut" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 ropey = "1.3"

@@ -139,7 +139,7 @@ impl GrepReader {
         if i < self.position_markers.len() {
             let pos_cur = self.reader.stream_position()?;
             let pos_mark = self.position_markers[i];
-            ensure!(pos_cur < pos_mark, "cursor is behind marker");
+            ensure!(pos_cur <= pos_mark, "cannot continue: cursor is behind current marker");
             let delta = pos_mark - pos_cur;
             let mut nsum = 0;
             for _ in 0.. {
