@@ -1,7 +1,7 @@
 # [[file:parser.note::f302d61a][f302d61a]]
 [package]
 name = "gchemol-parser"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Wenping Guo <ybyygu@gmail.com>"]
 description = "Text parsing made simple"

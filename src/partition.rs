@@ -142,10 +142,21 @@ impl<R: BufRead, P> Partitions<R, P> {
     }
 
     /// Read in `n` lines into `buf`. Return the number of bytes read in total.
+    ///
+    /// # NOTE
+    /// - The new line is forced to use unix style line ending.
     fn read_n_lines(&mut self, n: usize) -> Option<usize> {
         assert_ne!(n, 0);
         for _ in 0..n {
-            let m = self.reader.read_line(&mut self.buf)?;
+            let mut m = self.reader.read_line(&mut self.buf)?;
+            // force to use Unix line ending
+            if self.buf.ends_with("\r\n") {
+                let i = self.buf.len() - 2;
+                self.buf.remove(i);
+                // we removed one byte
+                m -= 1;
+            }
+
             self.nlist.push(m);
         }
         return Some(self.nlist.iter().sum());

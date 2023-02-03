@@ -51,22 +51,12 @@ impl<R: BufRead> TextReader<R> {
     /// Read a new line into buf.
     ///
     /// # NOTE
-    /// - The new line is forced to use unix style line ending.
     /// - This function will return the total number of bytes read.
     /// - If this function returns None, the stream has reached EOF or encountered any error.
     pub fn read_line(&mut self, buf: &mut String) -> Option<usize> {
         match self.inner.read_line(buf) {
             Ok(0) => None,
-            Ok(mut n) => {
-                // force to use Unix line ending
-                if buf.ends_with("\r\n") {
-                    let i = buf.len() - 2;
-                    buf.remove(i);
-                    // we removed one byte
-                    n -= 1;
-                }
-                return Some(n);
-            }
+            Ok(n) => Some(n),
             Err(e) => {
                 // discard any read in buf
                 error!("Read line failure: {:?}", e);
@@ -227,7 +217,7 @@ fn test_reader() -> Result<()> {
     assert_eq!(buf, "abc\n");
     buf.clear();
     reader.read_line(&mut buf);
-    assert_eq!(buf, "here\n");
+    assert_eq!(buf, "here\r\n");
 
     Ok(())
 }
