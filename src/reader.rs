@@ -53,17 +53,10 @@ impl<R: BufRead> TextReader<R> {
     /// # NOTE
     /// - The new line is forced to use unix style line ending.
     /// - This function will return the total number of bytes read.
-    /// - If this function returns None, the stream has reached EOF.
+    /// - If this function returns None, the stream has reached EOF or encountered any error.
     pub fn read_line(&mut self, buf: &mut String) -> Option<usize> {
         match self.inner.read_line(buf) {
-            Ok(0) => {
-                return None;
-            }
-            Err(e) => {
-                // discard any read in buf
-                error!("Read line failure: {:?}", e);
-                return None;
-            }
+            Ok(0) => None,
             Ok(mut n) => {
                 // force to use Unix line ending
                 if buf.ends_with("\r\n") {
@@ -73,6 +66,11 @@ impl<R: BufRead> TextReader<R> {
                     n -= 1;
                 }
                 return Some(n);
+            }
+            Err(e) => {
+                // discard any read in buf
+                error!("Read line failure: {:?}", e);
+                return None;
             }
         }
     }
@@ -97,14 +95,15 @@ impl<R: BufRead> TextReader<R> {
 use std::io::SeekFrom;
 
 impl<R: BufRead + Seek> TextReader<R> {
-    /// Skip reading until finding a matched line. Return the position before
-    /// the matched line. Return error if not found.
-    pub fn seek_line<F>(&mut self, mut f: F) -> Result<u64>
+    /// Skip reading until finding a matched line. Return the number
+    /// of bytes read in before the matched line. Return error if not
+    /// found.
+    pub fn seek_line<F>(&mut self, mut f: F) -> Result<usize>
     where
         F: FnMut(&str) -> bool,
     {
         let mut line = String::new();
-        let mut m = 0u64;
+        let mut m = 0;
         loop {
             let n = self.inner.read_line(&mut line)?;
             if n == 0 {
@@ -113,12 +112,40 @@ impl<R: BufRead + Seek> TextReader<R> {
             } else {
                 // back to line start position
                 if f(&line) {
-                    let _ = self.inner.seek(std::io::SeekFrom::Current(-1 * n as i64))?;
+                    let _ = self.goto_relative(-1 * n as i64)?;
                     return Ok(m);
                 }
             }
-            m += n as u64;
+            m += n;
             line.clear();
+        }
+
+        Ok(m)
+    }
+
+    /// Read line into `buf` until `f` closure predicates true. Return
+    /// total bytes read into `buf`.
+    ///
+    /// # NOTE
+    /// - the line matching predicate is not included into `buf`
+    pub fn read_line_until<F>(&mut self, buf: &mut String, mut f: F) -> Result<usize>
+    where
+        F: FnMut(&str) -> bool,
+    {
+        let mut m = 0;
+        loop {
+            let n = self.inner.read_line(buf)?;
+            if n == 0 {
+                // EOF
+                bail!("no matched line found!");
+            }
+            let line = &buf[m..];
+            if f(line) {
+                self.goto_relative(-1 * n as i64)?;
+                buf.drain(m..);
+                return Ok(m);
+            }
+            m += n;
         }
 
         Ok(m)
@@ -178,6 +205,16 @@ fn test_reader() -> Result<()> {
     let reader = TextReader::from_str(s);
     let line = reader.lines().next().unwrap();
     assert_eq!(line, "abc");
+
+    // test read line until
+    let s = "abc\nhere\r\nabcde\nhere\n\r";
+    let mut reader = TextReader::from_str(s);
+    let mut buf = String::new();
+    let n = reader.read_line_until(&mut buf, |line| line.starts_with("here"))?;
+    assert_eq!(buf, "abc\n");
+    buf.clear();
+    reader.read_line(&mut buf);
+    assert_eq!(buf, "here\n");
 
     Ok(())
 }
