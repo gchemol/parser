@@ -95,6 +95,19 @@ impl<R: BufRead> TextReader<R> {
 use std::io::SeekFrom;
 
 impl<R: BufRead + Seek> TextReader<R> {
+    /// Peek next line without moving cursor.
+    pub fn peek_line(&mut self) -> Option<String> {
+        let mut buf = String::new();
+        match self.inner.read_line(&mut buf) {
+            Err(_) => None,
+            Ok(0) => None,
+            Ok(n) => {
+                self.goto_relative(-1 * n as i64).expect("peek line go back");
+                Some(buf)
+            }
+        }
+    }
+
     /// Skip reading until finding a matched line. Return the number
     /// of bytes read in before the matched line. Return error if not
     /// found.
