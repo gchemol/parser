@@ -35,12 +35,14 @@
 //! ```
 // docs:1 ends here
 
-// [[file:../parser.note::*imports][imports:1]]
+// [[file:../parser.note::fa39dec3][fa39dec3]]
+// #![deprecated(note = "deprecated for bad performance")]
+
 use std::io::prelude::*;
 
 use crate::reader::TextReader;
 use gut::prelude::*;
-// imports:1 ends here
+// fa39dec3 ends here
 
 // [[file:../parser.note::de2a5565][de2a5565]]
 /// A helper struct for handling buffered text.
@@ -117,7 +119,7 @@ pub trait ReadPart {
 }
 // de2a5565 ends here
 
-// [[file:../parser.note::*partitions][partitions:1]]
+// [[file:../parser.note::11167470][11167470]]
 /// An iterator over part of text stream.
 pub struct Partitions<R, P>
 where
@@ -199,34 +201,27 @@ impl<R: BufRead> TextReader<R> {
         Partitions::new(self, p)
     }
 }
-// partitions:1 ends here
+// 11167470 ends here
 
-// [[file:../parser.note::*chunks/n-lines][chunks/n-lines:1]]
-/// Read in `n` lines at each time.
-pub struct Chunks(usize);
-
-impl ReadPart for Chunks {
-    fn read_next(&self, context: ReadContext) -> ReadAction {
-        let n = context.number_of_lines();
-        if n == self.0 {
-            ReadAction::Done(n)
-        } else {
-            unreachable!()
-        }
-    }
-
-    fn n_stride(&self) -> usize {
-        self.0
-    }
-}
-
+// [[file:../parser.note::9f67096e][9f67096e]]
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over each part of text in `n` lines.
-    pub fn chunks(self, n: usize) -> Partitions<R, Chunks> {
-        Partitions::new(self, Chunks(n))
+    pub fn chunks(mut self, n: usize) -> impl Iterator<Item = String> {
+        std::iter::from_fn(move || {
+            let mut s = String::new();
+            for i in 0..n {
+                // special treatment for the last line
+                match (i, self.read_line(&mut s)) {
+                    (_, Some(_)) => {}
+                    (0, None) => return None,
+                    (_, None) => return Some(s),
+                }
+            }
+            Some(s)
+        })
     }
 }
-// chunks/n-lines:1 ends here
+// 9f67096e ends here
 
 // [[file:../parser.note::f96ed947][f96ed947]]
 /// Terminated with a tail line
@@ -304,6 +299,7 @@ where
 
 impl<R: BufRead> TextReader<R> {
     /// Returns an iterator over a part of text preceded with a head line.
+    // #[deprecated(note = "please use GrepReader instead")]
     pub fn partitions_preceded<F>(self, f: F) -> Partitions<R, Preceded<F>>
     where
         F: Fn(&str) -> bool,

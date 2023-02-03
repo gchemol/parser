@@ -1,26 +1,28 @@
-// [[file:../parser.note::ea2eb3e9][ea2eb3e9]]
+// [[file:../parser.note::*imports][imports:1]]
 use super::*;
 
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-// ea2eb3e9 ends here
+// imports:1 ends here
 
-// [[file:../parser.note::*mods][mods:1]]
-mod internal;
-// mods:1 ends here
+// [[file:../parser.note::480b544e][480b544e]]
+mod grep_lib;
+mod grep_bin;
+// 480b544e ends here
 
-// [[file:../parser.note::0a0d90f1][0a0d90f1]]
-use self::internal::build_matcher_for_literals;
-use self::internal::make_searcher;
-use self::internal::PartSink;
+// [[file:../parser.note::b3c30bcf][b3c30bcf]]
+use crate::view::TextViewer;
 
 use std::io::SeekFrom;
+use std::path::{Path, PathBuf};
 
 /// Quick grep text by marking the line that matching a pattern,
-/// suitable for very large text file.
+/// suitable for very large text file. If external rg command exists
+/// in system, it will be called preferably for better performance.
 #[derive(Debug)]
 pub struct GrepReader {
+    src: PathBuf,
     // A BufReader for File
     reader: BufReader<File>,
     // marked positions
@@ -36,33 +38,32 @@ impl GrepReader {
         let reader = BufReader::new(f);
         let grep = Self {
             reader,
+            src: p.to_owned(),
             position_markers: vec![],
             marker_index: 0,
         };
         Ok(grep)
     }
 
-    /// Mark positions that matching pattern, so that we can seek these
-    /// positions later. Return the number of marked positions.
-    pub fn mark<B: AsRef<str>>(&mut self, patterns: &[B]) -> Result<usize> {
-        let mut n = 0;
-        let mut marked = vec![];
-        let matcher = build_matcher_for_literals(patterns)?;
-        // grep does not know current position of the reader
-        let pos_cur = self.reader.stream_position()?;
-        make_searcher().search_reader(
-            matcher,
-            &mut self.reader,
-            PartSink(|pos, _line| {
-                marked.push(pos + pos_cur);
-                n += 1;
-                Ok(true)
-            }),
-        )?;
-        // reset markers
-        self.position_markers = marked;
+    /// Mark positions that matching `pattern`, so that we can seek
+    /// these positions later. Regex can be used in `pattern`. Return
+    /// the number of marked positions.
+    ///
+    /// # Paramters
+    /// * max_count: exits search if max_count matches reached.
+    pub fn mark(&mut self, pattern: &str, max_count: impl Into<Option<usize>>) -> Result<usize> {
+        let max_count = max_count.into();
+        if let Ok(marked) = self::grep_bin::mark_matched_positions_with_ripgrep(pattern, &self.src, max_count) {
+            self.position_markers = marked;
+        } else {
+            debug!("rg bin is not available. Mark with grep lib ...");
+            use self::grep_lib::mark_matched_positions_with_ripgrep;
+            self.position_markers = mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
+        }
+        // self.position_markers = self::grep_lib::mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
+
         self.marker_index = 0;
-        Ok(n)
+        Ok(self.position_markers.len())
     }
 
     /// Goto the start of inner file.
@@ -119,15 +120,63 @@ impl GrepReader {
     pub fn get_mut(&mut self) -> &mut BufReader<File> {
         &mut self.reader
     }
-}
-// 0a0d90f1 ends here
 
-// [[file:../parser.note::*test][test:1]]
+    /// View next `n` lines like in a normal text viewer. This method
+    /// will forward the cursor by `n` lines.
+    pub fn view_lines(&mut self, n: usize) -> Result<TextViewer> {
+        let mut s = String::new();
+        self.read_lines(n, &mut s)?;
+        let v = TextViewer::from_str(&s);
+        Ok(v)
+    }
+
+    /// Return text from current position to the next marker or file
+    /// end. It method will forward the cursor to the next marker.
+    pub fn read_until_next_marker(&mut self, s: &mut String) -> Result<()> {
+        let i = self.marker_index;
+
+        // read until EOF?
+        if i < self.position_markers.len() {
+            let pos_cur = self.reader.stream_position()?;
+            let pos_mark = self.position_markers[i];
+            ensure!(pos_cur <= pos_mark, "cannot continue: cursor is behind current marker");
+            let delta = pos_mark - pos_cur;
+            let mut nsum = 0;
+            for _ in 0.. {
+                let n = self.reader.read_line(s)?;
+                assert_ne!(n, 0);
+                nsum += n as u64;
+                if nsum >= delta {
+                    break;
+                }
+            }
+            self.marker_index += 1;
+        } else {
+            while self.reader.read_line(s)? != 0 {
+                //
+            }
+        }
+        Ok(())
+    }
+
+    /// View all lines until next marker like in a normal text viewer.
+    /// It method will forward the cursor to the next marker.
+    pub fn view_until_next_marker(&mut self) -> Result<TextViewer> {
+        let mut s = String::new();
+        self.read_until_next_marker(&mut s)?;
+        Ok(TextViewer::from_str(&s))
+    }
+}
+// b3c30bcf ends here
+
+// [[file:../parser.note::3da52855][3da52855]]
 #[test]
 fn test_grep() -> Result<()> {
     let path = "./tests/files/multi.xyz";
     let mut reader = GrepReader::try_from_path(path.as_ref())?;
-    let n = reader.mark(&[r"^\s*\d+\s*$"])?;
+    let n = reader.mark(r"^\s*\d+\s*$", 2)?;
+    assert_eq!(n, 2);
+    let n = reader.mark(r"^\s*\d+\s*$", None)?;
     assert_eq!(n, 6);
 
     let _ = reader.goto_next_marker()?;
@@ -136,19 +185,8 @@ fn test_grep() -> Result<()> {
     let _ = reader.read_lines(1, &mut s)?;
     assert_eq!(s.trim(), "10");
 
-    // we can skip some lines before marking
-    reader.goto_start();
-    let mut s = String::new();
-    reader.read_lines(1, &mut s)?;
-    let n = reader.mark(&[r"^\s*\d+\s*$"])?;
-    assert_eq!(n, 5);
-    let _ = reader.goto_next_marker()?;
-    s.clear();
-    reader.read_lines(1, &mut s)?;
-    assert_eq!(s.trim(), "10");
-
     // goto the marker directly
-    let _ = reader.goto_marker(3)?;
+    let _ = reader.goto_marker(4)?;
     s.clear();
     reader.read_lines(1, &mut s)?;
     assert_eq!(s.trim(), "16");
@@ -159,4 +197,29 @@ fn test_grep() -> Result<()> {
 
     Ok(())
 }
-// test:1 ends here
+
+#[test]
+fn test_grep_read_until() -> Result<()> {
+    let path = "./tests/files/multi.xyz";
+    // read until next marker
+    let mut reader = GrepReader::try_from_path(path.as_ref())?;
+    let n = reader.mark(r"^ Configuration number :", None)?;
+    assert_eq!(n, 6);
+    let mut s = String::new();
+    reader.read_until_next_marker(&mut s)?;
+    assert!(s.ends_with("          16\r\n"));
+    s.clear();
+    reader.goto_next_marker();
+    reader.read_until_next_marker(&mut s)?;
+    assert!(s.starts_with(" Configuration number :       14"));
+    assert!(s.ends_with("          16\r\n"));
+    assert_eq!(reader.marker_index, 3);
+    reader.goto_marker(5);
+    s.clear();
+    reader.read_until_next_marker(&mut s)?;
+    assert!(s.starts_with(" Configuration number :       42"));
+    assert!(s.ends_with("0.97637  -1.60620\r\n"));
+
+    Ok(())
+}
+// 3da52855 ends here
