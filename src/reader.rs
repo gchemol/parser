@@ -126,12 +126,12 @@ impl<R: BufRead + Seek> TextReader<R> {
         Ok(m)
     }
 
-    /// Read line into `buf` until `f` closure predicates true. Return
+    /// Read lines into `buf` until `f` closure predicates true. Return
     /// total bytes read into `buf`.
     ///
     /// # NOTE
     /// - the line matching predicate is not included into `buf`
-    pub fn read_line_until<F>(&mut self, buf: &mut String, mut f: F) -> Result<usize>
+    pub fn read_until<F>(&mut self, buf: &mut String, mut f: F) -> Result<usize>
     where
         F: FnMut(&str) -> bool,
     {
@@ -213,7 +213,7 @@ fn test_reader() -> Result<()> {
     let s = "abc\nhere\r\nabcde\nhere\n\r";
     let mut reader = TextReader::from_str(s);
     let mut buf = String::new();
-    let n = reader.read_line_until(&mut buf, |line| line.starts_with("here"))?;
+    let n = reader.read_until(&mut buf, |line| line.starts_with("here"))?;
     assert_eq!(buf, "abc\n");
     buf.clear();
     reader.read_line(&mut buf);
