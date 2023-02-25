@@ -18,8 +18,7 @@ use std::io::SeekFrom;
 use std::path::{Path, PathBuf};
 
 /// Quick grep text by marking the line that matching a pattern,
-/// suitable for very large text file. If external rg command exists
-/// in system, it will be called preferably for better performance.
+/// suitable for very large text file.
 #[derive(Debug)]
 pub struct GrepReader {
     src: PathBuf,
@@ -52,15 +51,10 @@ impl GrepReader {
     /// # Paramters
     /// * max_count: exits search if max_count matches reached.
     pub fn mark(&mut self, pattern: &str, max_count: impl Into<Option<usize>>) -> Result<usize> {
+        use self::grep_lib::mark_matched_positions_with_ripgrep;
+
         let max_count = max_count.into();
-        if let Ok(marked) = self::grep_bin::mark_matched_positions_with_ripgrep(pattern, &self.src, max_count) {
-            self.position_markers = marked;
-        } else {
-            debug!("rg bin is not available. Mark with grep lib ...");
-            use self::grep_lib::mark_matched_positions_with_ripgrep;
-            self.position_markers = mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
-        }
-        // self.position_markers = self::grep_lib::mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
+        self.position_markers = mark_matched_positions_with_ripgrep(pattern, &self.src, max_count)?;
 
         self.marker_index = 0;
         Ok(self.position_markers.len())
