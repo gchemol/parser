@@ -5,13 +5,6 @@
 // [[file:../parser.note::422da9c6][422da9c6]]
 pub use nom;
 
-/// parse result with verbose error
-pub type IResult<I, O> = nom::IResult<I, O, nom::error::VerboseError<I>>;
-// pub use nom::IResult;
-
-// add error context
-pub use nom::error::context;
-
 // macros
 pub use crate::call; //  used in do_parse! macro
 pub use crate::do_parse;
@@ -37,6 +30,21 @@ pub use nom::combinator::{not, opt, peek};
 // error messages
 pub use nom::Finish;
 // 422da9c6 ends here
+
+// [[file:../parser.note::ad443aaf][ad443aaf]]
+/// parse result with verbose error
+pub type IResult<I, O> = nom::IResult<I, O, nom::error::VerboseError<I>>;
+// pub use nom::IResult;
+
+// add error context
+pub use nom::error::context;
+
+/// Creates an error from the input position.
+pub fn parse_error<I, O>(input: I) -> IResult<I, O> {
+    let e = nom::error::make_error(input, nom::error::ErrorKind::Fail);
+    Err(nom::Err::Error(e))
+}
+// ad443aaf ends here
 
 // [[file:../parser.note::df9c1bf7][df9c1bf7]]
 /// macro imported from nom 6
