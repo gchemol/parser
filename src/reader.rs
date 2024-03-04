@@ -52,17 +52,9 @@ impl<R: BufRead> TextReader<R> {
     ///
     /// # NOTE
     /// - This function will return the total number of bytes read.
-    /// - If this function returns None, the stream has reached EOF or encountered any error.
-    pub fn read_line(&mut self, buf: &mut String) -> Option<usize> {
-        match self.inner.read_line(buf) {
-            Ok(0) => None,
-            Ok(n) => Some(n),
-            Err(e) => {
-                // discard any read in buf
-                error!("Read line failure: {:?}", e);
-                return None;
-            }
-        }
+    /// - If this function returns Ok(0), the stream has reached EOF.
+    pub fn read_line(&mut self, buf: &mut String) -> Result<usize> {
+        self.inner.read_line(buf).map_err(|e| anyhow!("Read line failure"))
     }
 
     /// Returns an iterator over the lines of this reader. Each string returned
