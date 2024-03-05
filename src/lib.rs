@@ -14,14 +14,6 @@
 //! 
 //! // seek a specific line
 //! let _ = reader.seek_line(|line| line.starts_with("@<TRIPOS>")).unwrap();
-//! 
-//! // split remaining text into chunks (each chunk has 5 lines)
-//! let chunks = reader.chunks(5);
-//! 
-//! for x in chunks {
-//!     // call nom parser to parse each chunk
-//!     dbg!(x);
-//! }
 //! ```
 
 // [[file:../parser.note::cbed1309][cbed1309]]
@@ -35,6 +27,10 @@ mod core;
 mod grep;
 mod reader;
 mod view;
+
+mod common {
+    pub use gut::prelude::*;
+}
 // 9b3ecbac ends here
 
 // [[file:../parser.note::ff35c905][ff35c905]]

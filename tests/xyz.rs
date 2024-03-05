@@ -24,19 +24,18 @@ impl Atom {
 /// # Example
 ///
 /// C -11.4286  1.7645  0.0000
-fn read_atom_xyz(s: &str) -> IResult<&str, Atom> {
-    let mut p = tuple((ws(alpha1), ws(xyz_array), read_line));
-    let (s, (symbol, positions, _)) = context("read xyz atom", p)(s)?;
-
+fn read_atom_xyz(s: &mut &str) -> PResult<Atom> {
+    let (symbol, positions, _extra) = (ws(alpha1), ws(xyz_array), rest_line).context(label("xyz line")).parse_next(s)?;
     let atom = Atom::new(symbol, positions);
-    Ok((s, atom))
+
+    Ok(atom)
 }
 
 #[test]
 fn test_parser_read_atom() -> Result<()> {
-    let (_, x) = read_atom_xyz("C -11.4286 -1.3155  0.0000 \n").nom_trace_err()?;
+    let (_, x) = read_atom_xyz.parse_peek("C -11.4286 -1.3155  0.0000 \n").unwrap();
     assert_eq!("C", x.symbol);
-    let (_, x) = read_atom_xyz(" C -11.4286 -1.3155  0.0000 \n").nom_trace_err()?;
+    let (_, x) = read_atom_xyz.parse_peek(" C -11.4286 -1.3155  0.0000 \n").unwrap();
     assert_eq!("C", x.symbol);
     assert_eq!(0.0, x.position[2]);
     Ok(())
@@ -51,16 +50,15 @@ fn test_parser_read_atom() -> Result<()> {
 /// C -11.4286  1.7645  0.0000
 /// C -10.0949  0.9945  0.0000
 /// C -10.0949 -0.5455  0.0000
-fn read_xyz_stream(s: &str) -> IResult<&str, Vec<Atom>> {
-    let mut read_atoms = many1(read_atom_xyz);
-    let mut p = tuple((
+fn read_xyz_stream(s: &mut &str) -> PResult<Vec<Atom>> {
+    let mut read_atoms = repeat(1.., read_atom_xyz);
+    let (_, _, atoms) = ((
         read_usize, // natoms
         read_line,  // ignore title
         read_atoms, // many atoms
-    ));
-
-    let (s, (n, _, atoms)) = context("read xyz list", p)(s)?;
-    Ok((s, atoms))
+    ))
+        .parse_next(s)?;
+    Ok(atoms)
 }
 
 #[test]
@@ -83,8 +81,9 @@ fn test_parser_read_xyz() {
    O  -3.77040   0.96374  -1.49419
    H  -3.35189   1.74003  -1.96565
    H  -3.08717   0.51682  -0.91667
+
 ";
-    let (_, x) = read_xyz_stream(txt).unwrap();
+    let (_, x) = read_xyz_stream.parse_peek(txt).unwrap();
     assert_eq!(x.len(), 16);
 }
 
@@ -104,7 +103,9 @@ fn test_text_parser() -> Result<()> {
     let mols: Result<Vec<_>> = parts
         .map(|part| {
             let part = part?;
-            let (_, mol) = read_xyz_stream(&part).map_err(|e| anyhow!("nom parse error: {e:?}\nstream = {part:?}"))?;
+            let mol = read_xyz_stream
+                .parse(&part)
+                .map_err(|e| anyhow!("{e}\nstream = {part:?}"))?;
             Ok(mol)
         })
         .collect();
