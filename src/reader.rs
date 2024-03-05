@@ -127,7 +127,7 @@ impl<R: BufRead + Seek> TextReader<R> {
     where
         F: FnMut(&str) -> bool,
     {
-        let mut m = 0;
+        let mut m = buf.len();
         loop {
             let n = self.inner.read_line(buf)?;
             if n == 0 {
