@@ -14,14 +14,6 @@
 //! 
 //! // seek a specific line
 //! let _ = reader.seek_line(|line| line.starts_with("@<TRIPOS>")).unwrap();
-//! 
-//! // split remaining text into chunks (each chunk has 5 lines)
-//! let chunks = reader.chunks(5);
-//! 
-//! for x in chunks {
-//!     // call nom parser to parse each chunk
-//!     dbg!(x);
-//! }
 //! ```
 
 // [[file:../parser.note::cbed1309][cbed1309]]
@@ -31,17 +23,20 @@ use std::path::Path;
 // cbed1309 ends here
 
 // [[file:../parser.note::9b3ecbac][9b3ecbac]]
-mod core;
-mod grep;
+// mod grep;
 mod reader;
 mod view;
+
+mod common {
+    pub use gut::prelude::*;
+}
 // 9b3ecbac ends here
 
 // [[file:../parser.note::ff35c905][ff35c905]]
 pub mod parsers;
-// pub mod partition;
 pub use crate::reader::*;
 
-pub use crate::grep::GrepReader;
 pub use crate::view::TextViewer;
+pub use grep_reader::GrepReader;
+// pub use crate::grep::GrepReader;
 // ff35c905 ends here

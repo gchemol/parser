@@ -1,9 +1,9 @@
-// [[file:../parser.note::*imports][imports:1]]
+// [[file:../parser.note::8e7e8fdf][8e7e8fdf]]
 use gut::fs::*;
 use gut::prelude::*;
 
 use std::io::Cursor;
-// imports:1 ends here
+// 8e7e8fdf ends here
 
 // [[file:../parser.note::3f27d680][3f27d680]]
 type FileReader = BufReader<File>;
