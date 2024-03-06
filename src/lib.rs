@@ -23,7 +23,6 @@ use std::path::Path;
 // cbed1309 ends here
 
 // [[file:../parser.note::9b3ecbac][9b3ecbac]]
-mod core;
 mod grep;
 mod reader;
 mod view;
