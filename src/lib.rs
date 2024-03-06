@@ -23,7 +23,7 @@ use std::path::Path;
 // cbed1309 ends here
 
 // [[file:../parser.note::9b3ecbac][9b3ecbac]]
-mod grep;
+// mod grep;
 mod reader;
 mod view;
 
@@ -36,6 +36,7 @@ mod common {
 pub mod parsers;
 pub use crate::reader::*;
 
-pub use crate::grep::GrepReader;
 pub use crate::view::TextViewer;
+pub use grep_reader::GrepReader;
+// pub use crate::grep::GrepReader;
 // ff35c905 ends here
