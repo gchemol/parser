@@ -19,12 +19,12 @@ pub use winnow::Parser;
 // 0512156a ends here
 
 // [[file:../parser.note::fb1326ab][fb1326ab]]
-/// Create context labe
+/// Create context label
 pub fn label(s: &'static str) -> StrContext {
     StrContext::Label(s)
 }
 
-/// Convert winnow error to anyhow Error
+/// Convert winnow error to anyhow Error with `input` context
 pub fn parse_error(e: winnow::error::ParseError<&str, winnow::error::ContextError>, input: &str) -> Error {
     anyhow!("found parse error:\n{:}\ninput={input:?}", e.to_string())
 }
@@ -50,7 +50,7 @@ pub fn read_line<'a>(s: &mut &'a str) -> PResult<&'a str> {
 
 /// Take the rest line. The line ending is not included.
 pub fn rest_line<'a>(input: &mut &'a str) -> PResult<&'a str> {
-    use winnow::ascii::{line_ending, till_line_ending};
+    use winnow::ascii::till_line_ending;
     terminated(till_line_ending, line_ending).context(label("rest line")).parse_next(input)
 }
 
@@ -87,13 +87,11 @@ where
 // [[file:../parser.note::3d14b516][3d14b516]]
 /// Match one unsigned integer: 123
 pub fn unsigned_integer<'a>(input: &mut &'a str) -> PResult<usize> {
-    use winnow::ascii::digit1;
     digit1.try_map(|x: &str| x.parse()).context(label("usize")).parse_next(input)
 }
 
 /// Match one signed integer: -123 or +123
 pub fn signed_integer(s: &mut &str) -> PResult<isize> {
-    use winnow::ascii::digit1;
     use winnow::combinator::alt;
     use winnow::combinator::opt;
 
@@ -103,8 +101,6 @@ pub fn signed_integer(s: &mut &str) -> PResult<isize> {
 
 /// Parse a line containing an unsigned integer number.
 pub fn read_usize(s: &mut &str) -> PResult<usize> {
-    use winnow::ascii::{line_ending, space0};
-
     // allow white spaces
     let p = delimited(space0, unsigned_integer, space0);
     terminated(p, line_ending).parse_next(s)
@@ -112,9 +108,6 @@ pub fn read_usize(s: &mut &str) -> PResult<usize> {
 
 /// Parse a line containing many unsigned numbers
 pub fn read_usize_many(s: &mut &str) -> PResult<Vec<usize>> {
-    use winnow::ascii::{line_ending, space0, space1};
-    use winnow::combinator::separated;
-
     let x = seq! {
         _: space0,
         separated(1.., unsigned_integer, space1),
@@ -138,15 +131,12 @@ pub fn double(input: &mut &str) -> PResult<f64> {
 
 /// Consume three float numbers separated by one or more spaces. Return xyz array.
 pub fn xyz_array(s: &mut &str) -> PResult<[f64; 3]> {
-    use winnow::ascii::space1;
     let x = seq! {double, _: space1, double, _: space1, double}.parse_next(s)?;
     Ok([x.0, x.1, x.2])
 }
 
 /// Parse a line containing a float number possibly surrounded by spaces
 pub fn read_double(s: &mut &str) -> PResult<f64> {
-    use winnow::ascii::{line_ending, space0};
-
     // allow white spaces
     let p = delimited(space0, double, space0);
     terminated(p, line_ending).parse_next(s)
@@ -154,9 +144,6 @@ pub fn read_double(s: &mut &str) -> PResult<f64> {
 
 /// Parse a line containing many float numbers
 pub fn read_double_many(s: &mut &str) -> PResult<Vec<f64>> {
-    use winnow::ascii::{line_ending, space0, space1};
-    use winnow::combinator::separated;
-
     let x = seq! {
         _: space0,
         separated(1.., double, space1),
@@ -203,8 +190,6 @@ fn test_fortran_float() {
 // [[file:../parser.note::10e5dba2][10e5dba2]]
 #[test]
 fn test_ws() -> PResult<()> {
-    use winnow::ascii::{digit1, line_ending, space0};
-
     let s = " 123 ";
     let (_, x) = ws(digit1).parse_peek(s)?;
     assert_eq!(x, "123");

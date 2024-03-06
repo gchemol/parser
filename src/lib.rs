@@ -34,7 +34,6 @@ mod common {
 
 // [[file:../parser.note::ff35c905][ff35c905]]
 pub mod parsers;
-// pub mod partition;
 pub use crate::reader::*;
 
 pub use crate::grep::GrepReader;
